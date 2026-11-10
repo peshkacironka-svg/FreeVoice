@@ -11,6 +11,7 @@ final class CallManager: ObservableObject {
 
     private let nearbyAudio = NearbyAudioService()
     private var activePeer: MCPeerID?
+    private var outgoingTimeoutTask: Task<Void, Never>?
 
     init() {
         nearbyAudio.onPeersChanged = { [weak self] peers in
@@ -30,6 +31,8 @@ final class CallManager: ObservableObject {
         nearbyAudio.onConnected = { [weak self] peer in
             Task { @MainActor in
                 guard let self, self.activePeer == peer, var call = self.activeCall else { return }
+                self.outgoingTimeoutTask?.cancel()
+                self.outgoingTimeoutTask = nil
                 call.status = .connected
                 self.activeCall = call
             }
@@ -37,6 +40,8 @@ final class CallManager: ObservableObject {
         nearbyAudio.onDisconnected = { [weak self] peer in
             Task { @MainActor in
                 guard let self, self.activePeer == peer, let call = self.activeCall else { return }
+                self.outgoingTimeoutTask?.cancel()
+                self.outgoingTimeoutTask = nil
                 if call.status == .connected {
                     self.recordCompletedCall(call)
                 } else if call.status == .outgoing {
@@ -64,13 +69,12 @@ final class CallManager: ObservableObject {
                       self.activeCall?.id == call.id,
                       self.activeCall?.status == .outgoing else { return }
                 guard granted else {
-                    self.nearbyAudio.endCall()
-                    self.activeCall = nil
-                    self.activePeer = nil
+                    self.finishCurrentCall()
                     self.errorMessage = "Microphone access is required to make a voice call. Enable it for FreeVoice in Settings."
                     return
                 }
                 self.nearbyAudio.invite(peer)
+                self.startOutgoingTimeout(for: call, peer: peer)
             }
         }
     }
@@ -109,21 +113,41 @@ final class CallManager: ObservableObject {
     }
 
     func endCall() {
-        guard let call = activeCall else { return }
-        if call.status == .connected {
-            recordCompletedCall(call)
+        guard activeCall != nil else { return }
+        finishCurrentCall()
+    }
+
+    func dismissError() {
+        errorMessage = nil
+    }
+
+    private func startOutgoingTimeout(for call: CallSession, peer: MCPeerID) {
+        outgoingTimeoutTask?.cancel()
+        outgoingTimeoutTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 35_000_000_000)
+            } catch {
+                return
+            }
+            guard let self,
+                  self.activeCall?.id == call.id,
+                  self.activeCall?.status == .outgoing,
+                  self.activePeer == peer else { return }
+            self.finishCurrentCall()
+            self.errorMessage = "No answer from the nearby iPhone. The invitation timed out."
         }
-        if call.status == .incoming {
-            nearbyAudio.rejectIncomingCall()
+    }
+
+    private func finishCurrentCall() {
+        outgoingTimeoutTask?.cancel()
+        outgoingTimeoutTask = nil
+        if let peer = activePeer {
+            nearbyAudio.endCall(with: peer)
         } else {
             nearbyAudio.endCall()
         }
         activeCall = nil
         activePeer = nil
-    }
-
-    func dismissError() {
-        errorMessage = nil
     }
 
     private func recordCompletedCall(_ call: CallSession) {
