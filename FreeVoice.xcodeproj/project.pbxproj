@@ -1,0 +1,115 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* FreeVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* FreeVoiceApp.swift */; };
+		A10000000000000000000002 /* CallSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* CallSession.swift */; };
+		A10000000000000000000003 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* CallManager.swift */; };
+		A10000000000000000000004 /* NearbyAudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* NearbyAudioService.swift */; };
+		A10000000000000000000005 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* ContentView.swift */; };
+		A10000000000000000000006 /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* ActiveCallView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* FreeVoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeVoiceApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* CallSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallSession.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* NearbyAudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyAudioService.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000000000000000000008 /* FreeVoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreeVoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000002 /* FreeVoice */,
+				A40000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000000000000000000002 /* FreeVoice */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000004 /* App */,
+				A40000000000000000000005 /* Models */,
+				A40000000000000000000006 /* Services */,
+				A40000000000000000000007 /* Views */,
+				A40000000000000000000008 /* Configuration */,
+			);
+			path = FreeVoice;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000003 /* Products */ = {isa = PBXGroup; children = (A20000000000000000000008 /* FreeVoice.app */); name = Products; sourceTree = "<group>"; };
+		A40000000000000000000004 /* App */ = {isa = PBXGroup; children = (A20000000000000000000001 /* FreeVoiceApp.swift */); path = App; sourceTree = "<group>"; };
+		A40000000000000000000005 /* Models */ = {isa = PBXGroup; children = (A20000000000000000000002 /* CallSession.swift */); path = Models; sourceTree = "<group>"; };
+		A40000000000000000000006 /* Services */ = {isa = PBXGroup; children = (A20000000000000000000003 /* CallManager.swift */, A20000000000000000000004 /* NearbyAudioService.swift */); path = Services; sourceTree = "<group>"; };
+		A40000000000000000000007 /* Views */ = {isa = PBXGroup; children = (A20000000000000000000005 /* ContentView.swift */, A20000000000000000000006 /* ActiveCallView.swift */); path = Views; sourceTree = "<group>"; };
+		A40000000000000000000008 /* Configuration */ = {isa = PBXGroup; children = (A20000000000000000000007 /* Info.plist */); path = Configuration; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* FreeVoice */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "FreeVoice" */;
+			buildPhases = (A30000000000000000000002 /* Sources */, A30000000000000000000001 /* Frameworks */, A30000000000000000000003 /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			name = FreeVoice;
+			productName = FreeVoice;
+			productReference = A20000000000000000000008 /* FreeVoice.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A30000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* FreeVoiceApp.swift in Sources */, A10000000000000000000002 /* CallSession.swift in Sources */, A10000000000000000000003 /* CallManager.swift in Sources */, A10000000000000000000004 /* NearbyAudioService.swift in Sources */, A10000000000000000000005 /* ContentView.swift in Sources */, A10000000000000000000006 /* ActiveCallView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A30000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXProject section */
+		A60000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = {A50000000000000000000001 = {CreatedOnToolsVersion = 16.0; }; }; };
+			buildConfigurationList = A70000000000000000000001 /* Build configuration list for PBXProject "FreeVoice" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A40000000000000000000001;
+			productRefGroup = A40000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A50000000000000000000001 /* FreeVoice */);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		A80000000000000000000001 /* Project Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		A80000000000000000000002 /* Project Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+		A80000000000000000000003 /* Target Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = FreeVoice/Configuration/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.peshkacironka.freevoice; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		A80000000000000000000004 /* Target Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = FreeVoice/Configuration/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.peshkacironka.freevoice; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000000000000000000001 /* PBXProject */ = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000001 /* Project Debug */, A80000000000000000000002 /* Project Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A70000000000000000000002 /* PBXNativeTarget */ = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000003 /* Target Debug */, A80000000000000000000004 /* Target Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+
+	};
+	rootObject = A60000000000000000000001 /* Project object */;
+}
