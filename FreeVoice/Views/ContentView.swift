@@ -14,7 +14,21 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("FreeVoice")
+            .alert("FreeVoice", isPresented: errorIsPresented) {
+                Button("OK", role: .cancel) {
+                    callManager.dismissError()
+                }
+            } message: {
+                Text(callManager.errorMessage ?? "An unexpected error occurred.")
+            }
         }
+    }
+
+    private var errorIsPresented: Binding<Bool> {
+        Binding(
+            get: { callManager.errorMessage != nil },
+            set: { if !$0 { callManager.dismissError() } }
+        )
     }
 
     private var contactPicker: some View {
@@ -23,26 +37,38 @@ struct ContentView: View {
                 .font(.system(size: 72))
                 .foregroundStyle(.green)
 
-            Text("Call another iPhone")
+            Text("Call another nearby iPhone")
                 .font(.title2.weight(.semibold))
 
-            TextField("Contact name", text: $contactName)
+            TextField("Your name (optional)", text: $contactName)
                 .textFieldStyle(.roundedBorder)
                 .textContentType(.name)
                 .padding(.horizontal)
 
-            Button {
-                let name = contactName.trimmingCharacters(in: .whitespacesAndNewlines)
-                callManager.startCall(to: name.isEmpty ? "New contact" : name)
-            } label: {
-                Label("Start call", systemImage: "phone.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-            .padding(.horizontal)
+            if callManager.nearbyPeers.isEmpty {
+                ProgressView("Looking for nearby iPhones…")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Nearby iPhones")
+                        .font(.headline)
 
-            Text("Calling is a UI scaffold only. Network signaling and live audio are not implemented yet.")
+                    ForEach(callManager.nearbyPeers, id: \.displayName) { peer in
+                        Button {
+                            callManager.startCall(with: peer)
+                        } label: {
+                            Label(peer.displayName, systemImage: "phone.fill")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                    }
+                }
+                .padding(.horizontal)
+            }
+
+            Text("FreeVoice calls work between nearby iPhones. Both people need this app open and local-network access enabled.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
