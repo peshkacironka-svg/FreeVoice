@@ -19,15 +19,17 @@ final class NearbyAudioService: NSObject {
     private lazy var session = MCSession(peer: localPeer, securityIdentity: nil, encryptionPreference: .required)
     private var advertiser: MCNearbyServiceAdvertiser?
     private var browser: MCNearbyServiceBrowser?
-    private var pendingInvitation: ((Bool, MCSession?) -> Void)?
+private var discoveredPeers: [MCPeerID] = []
+private var pendingInvitation: ((Bool, MCSession?) -> Void)?
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private let playbackQueue = DispatchQueue(label: "FreeVoice.audio.playback")
     private let muteLock = NSLock()
     private var muted = false
-    private var audioStarted = false
-    private var networkFormat: AVAudioFormat {
+private var audioStarted = false
+private var inputTapInstalled = false
+private var networkFormat: AVAudioFormat {
         AVAudioFormat(commonFormat: .pcmFormatFloat32,
                       sampleRate: Self.audioSampleRate,
                       channels: 1,
@@ -42,7 +44,7 @@ final class NearbyAudioService: NSObject {
         browser.delegate = self
         self.advertiser = advertiser
         self.browser = browser
-        advertiser.start advertisingPeer()
+        advertiser.startAdvertisingPeer()
         browser.startBrowsingForPeers()
     }
 
@@ -99,11 +101,12 @@ final class NearbyAudioService: NSObject {
             }
 
             input.installTap(onBus: 0, bufferSize: 1_024, format: inputFormat) { [weak self] buffer, _ in
-                guard let self else { return }
-                self.capture(buffer, using: converter)
-            }
+    guard let self else { return }
+    self.capture(buffer, using: converter)
+}
+inputTapInstalled = true
 
-            engine.prepare()
+engine.prepare()
             try engine.start()
             player.play()
             audioStarted = true
@@ -164,8 +167,13 @@ final class NearbyAudioService: NSObject {
     }
 
     private func stopAudio() {
-        guard audioStarted || engine.isRunning else { return }
-        engine.inputNode.removeTap(onBus: 0)
+        guard audioStarted || engine.isRunning || inputTapInstalled || engine.attachedNodes.contains(player) else {
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    return
+}
+    engine.inputNode.removeTap(onBus: 0)
+    inputTapInstalled = false
+}
         player.stop()
         engine.stop()
         engine.reset()
@@ -198,18 +206,20 @@ extension NearbyAudioService: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            var peers = self.browser?.discoveredPeers ?? []
+           var peers = self.discoveredPeers
             if !peers.contains(peerID) { peers.append(peerID) }
-            self.onPeersChanged?(peers)
+self.discoveredPeers = peers
+self.onPeersChanged?(peers)
         }
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.onPeersChanged?(self.browser?.discoveredPeers ?? [])
-        }
+    DispatchQueue.main.async { [weak self] in
+        guard let self else { return }
+        self.discoveredPeers.removeAll { $0 == peerID }
+        self.onPeersChanged?(self.discoveredPeers)
     }
+}
 
     func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
         DispatchQueue.main.async { [weak self] in
