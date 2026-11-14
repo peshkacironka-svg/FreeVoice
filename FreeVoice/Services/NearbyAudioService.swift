@@ -1,18 +1,21 @@
 import AVFoundation
+import Darwin
 import Foundation
 import MultipeerConnectivity
 import UIKit
 
-/// Nearby-only audio transport. Each short PCM frame is sent unreliably to minimize
-/// latency; MultipeerConnectivity encrypts the peer session by default.
+/// Nearby-only audio transport. PCM packets use mono Float32 at 16 kHz and are
+/// sent unreliably to favor low latency. MultipeerConnectivity encrypts its session.
 final class NearbyAudioService: NSObject {
     private static let serviceType = "freevoice"
-    private static let audioSampleRate = 16_000.0
+    private static let sampleRate = 16_000.0
+    private static let maximumPacketBytes = 8_192
+    private static let maximumQueuedPackets = 8
 
     var onPeersChanged: (([MCPeerID]) -> Void)?
     var onIncomingCall: ((MCPeerID) -> Void)?
     var onConnected: ((MCPeerID) -> Void)?
-    var onDisconnected: (() -> Void)?
+    var onDisconnected: ((MCPeerID) -> Void)?
     var onError: ((String) -> Void)?
 
     private let localPeer = MCPeerID(displayName: UIDevice.current.name)
@@ -20,29 +23,44 @@ final class NearbyAudioService: NSObject {
     private var advertiser: MCNearbyServiceAdvertiser?
     private var browser: MCNearbyServiceBrowser?
     private var pendingInvitation: ((Bool, MCSession?) -> Void)?
+    private var pendingInvitationPeer: MCPeerID?
+    private var discoveredPeers: [MCPeerID] = []
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
-    private let playbackQueue = DispatchQueue(label: "FreeVoice.audio.playback")
+    private let audioQueue = DispatchQueue(label: "FreeVoice.audio")
+    private let receiveLock = NSLock()
     private let muteLock = NSLock()
+    private let callStateLock = NSLock()
+    private let conversionErrorLock = NSLock()
+    private var queuedIncomingPackets = 0
     private var muted = false
+    private var activeCallPeer: MCPeerID?
+    private var callIsActive = false
+    private var speakerEnabled = false
+    private var didReportConversionError = false
     private var audioStarted = false
-    private var networkFormat: AVAudioFormat {
+    private var inputTapInstalled = false
+    private var scheduledPlaybackBuffers = 0
+    private var playbackGeneration: UInt64 = 0
+
+    private var pcmFormat: AVAudioFormat {
         AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                      sampleRate: Self.audioSampleRate,
+                      sampleRate: Self.sampleRate,
                       channels: 1,
                       interleaved: false)!
     }
 
     func startDiscovery() {
         session.delegate = self
+
         let advertiser = MCNearbyServiceAdvertiser(peer: localPeer, discoveryInfo: nil, serviceType: Self.serviceType)
         let browser = MCNearbyServiceBrowser(peer: localPeer, serviceType: Self.serviceType)
         advertiser.delegate = self
         browser.delegate = self
         self.advertiser = advertiser
         self.browser = browser
-        advertiser.start advertisingPeer()
+        advertiser.startAdvertisingPeer()
         browser.startBrowsingForPeers()
     }
 
@@ -51,20 +69,41 @@ final class NearbyAudioService: NSObject {
     }
 
     func invite(_ peer: MCPeerID) {
+        setActiveCall(peer)
+        setMuted(false)
         browser?.invitePeer(peer, to: session, withContext: nil, timeout: 30)
     }
 
     func acceptIncomingCall() {
-        guard let invitation = pendingInvitation else { return }
+        guard let invitation = pendingInvitation, let peer = pendingInvitationPeer else { return }
         pendingInvitation = nil
+        pendingInvitationPeer = nil
+        setActiveCall(peer)
+        setMuted(false)
         invitation(true, session)
     }
 
-    func endCall() {
-        pendingInvitation?(false, nil)
+    func rejectIncomingCall() {
+        guard let invitation = pendingInvitation else { return }
         pendingInvitation = nil
-        stopAudio()
+        pendingInvitationPeer = nil
+        invitation(false, nil)
+    }
+
+    /// Ends or cancels the sole supported call, including an accepted invitation
+    /// that is still connecting. This app deliberately supports one peer at a time.
+    func endCall(with peer: MCPeerID? = nil) {
+        let peerToEnd = peer ?? currentCallPeer() ?? pendingInvitationPeer
+        if let pendingPeer = pendingInvitationPeer, peer == nil || pendingPeer == peer {
+            rejectIncomingCall()
+        }
+        setCallInactive()
+
+        if let peerToEnd {
+            browser?.cancelConnectPeer(peerToEnd)
+        }
         session.disconnect()
+        audioQueue.async { [weak self] in self?.stopAudio() }
     }
 
     func setMuted(_ value: Bool) {
@@ -74,42 +113,90 @@ final class NearbyAudioService: NSObject {
     }
 
     func setSpeakerEnabled(_ enabled: Bool) {
-        do {
-            try AVAudioSession.sharedInstance().overrideOutputAudioPort(enabled ? .speaker : .none)
-        } catch {
-            onError?("Could not change the audio output route: \(error.localizedDescription)")
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            self.speakerEnabled = enabled
+            guard self.audioStarted else { return }
+            self.applySpeakerRoute()
         }
     }
 
-    private func startAudio() {
-        guard !audioStarted else { return }
+    private func setActiveCall(_ peer: MCPeerID) {
+        callStateLock.lock()
+        activeCallPeer = peer
+        callIsActive = true
+        callStateLock.unlock()
+    }
+
+    private func setCallInactive() {
+        callStateLock.lock()
+        callIsActive = false
+        activeCallPeer = nil
+        callStateLock.unlock()
+    }
+
+    private func isCallActive(with peer: MCPeerID) -> Bool {
+        callStateLock.lock()
+        defer { callStateLock.unlock() }
+        return callIsActive && activeCallPeer == peer
+    }
+
+    private func currentCallPeer() -> MCPeerID? {
+        callStateLock.lock()
+        defer { callStateLock.unlock() }
+        return activeCallPeer
+    }
+
+    private func startAudio(for peer: MCPeerID) {
+        dispatchPrecondition(condition: .onQueue(audioQueue))
+        guard isCallActive(with: peer), !audioStarted else { return }
+
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth])
             try audioSession.setActive(true)
+            applySpeakerRoute()
 
             let input = engine.inputNode
-            try? input.setVoiceProcessingEnabled(true)
-            engine.attach(player)
-            engine.connect(player, to: engine.mainMixerNode, format: networkFormat)
-
+            try input.setVoiceProcessingEnabled(true)
             let inputFormat = input.outputFormat(forBus: 0)
-            guard let converter = AVAudioConverter(from: inputFormat, to: networkFormat) else {
+            guard let converter = AVAudioConverter(from: inputFormat, to: pcmFormat) else {
                 throw AudioTransportError.converterUnavailable
             }
 
+            conversionErrorLock.lock()
+            didReportConversionError = false
+            conversionErrorLock.unlock()
+
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: pcmFormat)
             input.installTap(onBus: 0, bufferSize: 1_024, format: inputFormat) { [weak self] buffer, _ in
-                guard let self else { return }
-                self.capture(buffer, using: converter)
+                self?.capture(buffer, using: converter)
             }
+            inputTapInstalled = true
 
             engine.prepare()
             try engine.start()
             player.play()
+            playbackGeneration &+= 1
+            scheduledPlaybackBuffers = 0
             audioStarted = true
         } catch {
             onError?("Could not start call audio: \(error.localizedDescription)")
+            setCallInactive()
             stopAudio()
+            session.disconnect()
+        }
+    }
+
+    private func applySpeakerRoute() {
+        dispatchPrecondition(condition: .onQueue(audioQueue))
+        do {
+            try AVAudioSession.sharedInstance().overrideOutputAudioPort(speakerEnabled ? .speaker : .none)
+        } catch {
+            DispatchQueue.main.async { [weak self] in
+                self?.onError?("Could not change the audio output route: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -119,9 +206,18 @@ final class NearbyAudioService: NSObject {
         muteLock.unlock()
         guard !shouldMute, !session.connectedPeers.isEmpty else { return }
 
-        let ratio = Self.audioSampleRate / inputBuffer.format.sampleRate
-        let capacity = AVAudioFrameCount(ceil(Double(inputBuffer.frameLength) * ratio) + 32)
-        guard let converted = AVAudioPCMBuffer(pcmFormat: networkFormat, frameCapacity: capacity) else { return }
+        let inputRate = inputBuffer.format.sampleRate
+        guard inputRate.isFinite, inputRate > 0 else {
+            reportConversionError("The microphone provided an unsupported audio sample rate.")
+            return
+        }
+        let ratio = Self.sampleRate / inputRate
+        let capacity = AVAudioFrameCount(ceil(Double(inputBuffer.frameLength) * ratio) + 64)
+        guard capacity > 0,
+              let converted = AVAudioPCMBuffer(pcmFormat: pcmFormat, frameCapacity: capacity) else {
+            reportConversionError("Could not allocate a buffer for microphone audio conversion.")
+            return
+        }
 
         var suppliedInput = false
         var conversionError: NSError?
@@ -134,14 +230,21 @@ final class NearbyAudioService: NSObject {
             inputStatus.pointee = .haveData
             return inputBuffer
         }
-        guard status != .error, conversionError == nil,
+        guard status != .error, conversionError == nil else {
+            reportConversionError("Microphone audio conversion failed: \(conversionError?.localizedDescription ?? "unknown converter error").")
+            return
+        }
+        guard converted.frameLength > 0,
               let samples = converted.floatChannelData?[0] else { return }
 
         let byteCount = Int(converted.frameLength) * MemoryLayout<Float>.size
-        guard byteCount > 0 else { return }
-        let frame = Data(bytes: samples, count: byteCount)
+        guard byteCount > 0, byteCount <= Self.maximumPacketBytes else {
+            reportConversionError("Converted microphone audio exceeded the supported packet size.")
+            return
+        }
+        let packet = Data(bytes: samples, count: byteCount)
         do {
-            try session.send(frame, toPeers: session.connectedPeers, with: .unreliable)
+            try session.send(packet, toPeers: session.connectedPeers, with: .unreliable)
         } catch {
             DispatchQueue.main.async { [weak self] in
                 self?.onError?("Could not send call audio: \(error.localizedDescription)")
@@ -149,30 +252,84 @@ final class NearbyAudioService: NSObject {
         }
     }
 
-    private func play(_ frame: Data) {
-        let sampleSize = MemoryLayout<Float>.size
-        guard !frame.isEmpty, frame.count <= 8_192, frame.count.isMultiple(of: sampleSize) else { return }
-        let frameCount = AVAudioFrameCount(frame.count / sampleSize)
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: networkFormat, frameCapacity: frameCount),
-              let destination = buffer.floatChannelData?[0] else { return }
-        frame.withUnsafeBytes { bytes in
-            guard let source = bytes.baseAddress else { return }
-            destination.update(from: source.assumingMemoryBound(to: Float.self), count: Int(frameCount))
+    private func reportConversionError(_ message: String) {
+        conversionErrorLock.lock()
+        guard !didReportConversionError else {
+            conversionErrorLock.unlock()
+            return
         }
-        buffer.frameLength = frameCount
-        player.scheduleBuffer(buffer)
+        didReportConversionError = true
+        conversionErrorLock.unlock()
+        DispatchQueue.main.async { [weak self] in self?.onError?(message) }
+    }
+
+    private func enqueuePlayback(_ packet: Data) {
+        guard !packet.isEmpty,
+              packet.count <= Self.maximumPacketBytes,
+              packet.count.isMultiple(of: MemoryLayout<Float>.size) else { return }
+
+        receiveLock.lock()
+        guard queuedIncomingPackets < Self.maximumQueuedPackets else {
+            receiveLock.unlock()
+            return
+        }
+        queuedIncomingPackets += 1
+        receiveLock.unlock()
+
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            self.play(packet)
+            self.receiveLock.lock()
+            self.queuedIncomingPackets = max(0, self.queuedIncomingPackets - 1)
+            self.receiveLock.unlock()
+        }
+    }
+
+    private func play(_ packet: Data) {
+        dispatchPrecondition(condition: .onQueue(audioQueue))
+        guard audioStarted,
+              scheduledPlaybackBuffers < Self.maximumQueuedPackets else { return }
+
+        let frameCount = packet.count / MemoryLayout<Float>.size
+        guard frameCount > 0,
+              let buffer = AVAudioPCMBuffer(pcmFormat: pcmFormat, frameCapacity: AVAudioFrameCount(frameCount)),
+              let destination = buffer.floatChannelData?[0] else { return }
+
+        let copied = packet.withUnsafeBytes { source -> Bool in
+            guard let baseAddress = source.baseAddress else { return false }
+            memcpy(destination, baseAddress, packet.count)
+            return true
+        }
+        guard copied else { return }
+
+        buffer.frameLength = AVAudioFrameCount(frameCount)
+        scheduledPlaybackBuffers += 1
+        let generation = playbackGeneration
+        player.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            guard let self else { return }
+            self.audioQueue.async {
+                guard self.playbackGeneration == generation else { return }
+                self.scheduledPlaybackBuffers = max(0, self.scheduledPlaybackBuffers - 1)
+            }
+        }
     }
 
     private func stopAudio() {
-        guard audioStarted || engine.isRunning else { return }
-        engine.inputNode.removeTap(onBus: 0)
+        dispatchPrecondition(condition: .onQueue(audioQueue))
+        playbackGeneration &+= 1
+        scheduledPlaybackBuffers = 0
+
+        if inputTapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            inputTapInstalled = false
+        }
         player.stop()
         engine.stop()
-        engine.reset()
         if engine.attachedNodes.contains(player) {
             engine.disconnectNodeOutput(player)
             engine.detach(player)
         }
+        engine.reset()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         audioStarted = false
     }
@@ -184,12 +341,20 @@ extension NearbyAudioService: MCNearbyServiceAdvertiserDelegate {
                     withContext context: Data?,
                     invitationHandler: @escaping (Bool, MCSession?) -> Void) {
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.pendingInvitation == nil else {
+            guard let self, self.pendingInvitation == nil, self.session.connectedPeers.isEmpty,
+                  self.currentCallPeer() == nil else {
                 invitationHandler(false, nil)
                 return
             }
             self.pendingInvitation = invitationHandler
+            self.pendingInvitationPeer = peerID
             self.onIncomingCall?(peerID)
+        }
+    }
+
+    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onError?("Nearby advertising could not start: \(error.localizedDescription)")
         }
     }
 }
@@ -198,16 +363,18 @@ extension NearbyAudioService: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            var peers = self.browser?.discoveredPeers ?? []
-            if !peers.contains(peerID) { peers.append(peerID) }
-            self.onPeersChanged?(peers)
+            if !self.discoveredPeers.contains(peerID) {
+                self.discoveredPeers.append(peerID)
+            }
+            self.onPeersChanged?(self.discoveredPeers)
         }
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.onPeersChanged?(self.browser?.discoveredPeers ?? [])
+            self.discoveredPeers.removeAll { $0 == peerID }
+            self.onPeersChanged?(self.discoveredPeers)
         }
     }
 
@@ -222,17 +389,19 @@ extension NearbyAudioService: MCSessionDelegate {
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         switch state {
         case .connected:
-            DispatchQueue.main.async { [weak self] in
+            audioQueue.async { [weak self] in
                 guard let self else { return }
-                self.startAudio()
-                self.onConnected?(peerID)
+                guard self.isCallActive(with: peerID) else {
+                    self.browser?.cancelConnectPeer(peerID)
+                    return
+                }
+                self.startAudio(for: peerID)
+                guard self.audioStarted, self.isCallActive(with: peerID) else { return }
+                DispatchQueue.main.async { self.onConnected?(peerID) }
             }
         case .notConnected:
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.stopAudio()
-                self.onDisconnected?()
-            }
+            audioQueue.async { [weak self] in self?.stopAudio() }
+            DispatchQueue.main.async { [weak self] in self?.onDisconnected?(peerID) }
         case .connecting:
             break
         @unknown default:
@@ -241,7 +410,8 @@ extension NearbyAudioService: MCSessionDelegate {
     }
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        playbackQueue.async { [weak self] in self?.play(data) }
+        guard isCallActive(with: peerID) else { return }
+        enqueuePlayback(data)
     }
 
     func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
