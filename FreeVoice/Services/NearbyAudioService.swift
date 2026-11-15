@@ -93,15 +93,13 @@ final class NearbyAudioService: NSObject {
     /// Ends or cancels the sole supported call, including an accepted invitation
     /// that is still connecting. This app deliberately supports one peer at a time.
     func endCall(with peer: MCPeerID? = nil) {
-        let peerToEnd = peer ?? currentCallPeer() ?? pendingInvitationPeer
+        
         if let pendingPeer = pendingInvitationPeer, peer == nil || pendingPeer == peer {
             rejectIncomingCall()
         }
         setCallInactive()
 
-        if let peerToEnd {
-            browser?.cancelConnectPeer(peerToEnd)
-        }
+        
         session.disconnect()
         audioQueue.async { [weak self] in self?.stopAudio() }
     }
@@ -392,9 +390,8 @@ extension NearbyAudioService: MCSessionDelegate {
             audioQueue.async { [weak self] in
                 guard let self else { return }
                 guard self.isCallActive(with: peerID) else {
-                    self.browser?.cancelConnectPeer(peerID)
-                    return
-                }
+    return
+}
                 self.startAudio(for: peerID)
                 guard self.audioStarted, self.isCallActive(with: peerID) else { return }
                 DispatchQueue.main.async { self.onConnected?(peerID) }
