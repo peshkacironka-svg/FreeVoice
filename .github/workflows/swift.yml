@@ -11,5 +11,12 @@ jobs:
       - name: Download repository
         uses: actions/checkout@v4
 
-      - name: Show Xcode projects and schemes
-        run: xcodebuild -list -project FreeVoice.xcodeproj
+      - name: Build FreeVoice for iOS Simulator
+        run: |
+          xcodebuild \
+            -project FreeVoice.xcodeproj \
+            -scheme FreeVoice \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
