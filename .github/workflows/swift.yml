@@ -1,0 +1,15 @@
+name: FreeVoice iOS Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode projects and schemes
+        run: xcodebuild -list -project FreeVoice.xcodeproj
