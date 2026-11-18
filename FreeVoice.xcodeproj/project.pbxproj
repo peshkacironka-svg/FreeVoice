@@ -48,9 +48,10 @@
         40000000000000000000001 = {
             isa = PBXGroup;
             children = (
-                40000000000000000000002 /* FreeVoice */,
-                40000000000000000000003 /* Products */,
-            );
+    40000000000000000000002 /* FreeVoice */,
+    20000000000000000000007 /* GoogleService-Info.plist */,
+    40000000000000000000003 /* Products */,
+);
             sourceTree = "<group>";
         };
         40000000000000000000002 /* FreeVoice */ = {
@@ -61,7 +62,6 @@
                 40000000000000000000006 /* Services */,
                 40000000000000000000007 /* Views */,
                 40000000000000000000008 /* Configuration */,
-                20000000000000000000007 /* GoogleService-Info.plist */,
             );
             path = FreeVoice;
             sourceTree = "<group>";
@@ -79,7 +79,7 @@
             children = (
                 20000000000000000000001 /* FreeVoiceApp.swift */,
             );
-            path = "FreeVoice/App";
+            path = App;
             sourceTree = "<group>";
         };
         40000000000000000000005 /* Models */ = {
@@ -87,7 +87,7 @@
             children = (
                 20000000000000000000002 /* CallSession.swift */,
             );
-            path = "FreeVoice/Models";
+            path = Models;
             sourceTree = "<group>";
         };
         40000000000000000000006 /* Services */ = {
@@ -96,7 +96,7 @@
                 20000000000000000000003 /* CallManager.swift */,
                 20000000000000000000004 /* NearbyAudioService.swift */,
             );
-            path = "FreeVoice/Services";
+            path = Services;
             sourceTree = "<group>";
         };
         40000000000000000000007 /* Views */ = {
@@ -105,7 +105,7 @@
                 20000000000000000000005 /* ContentView.swift */,
                 20000000000000000000006 /* ActiveCallView.swift */,
             );
-            path = "FreeVoice/Views";
+            path = Views;
             sourceTree = "<group>";
         };
         40000000000000000000008 /* Configuration */ = {
@@ -113,7 +113,7 @@
             children = (
                 20000000000000000000008 /* Info.plist */,
             );
-            path = "FreeVoice/Configuration";
+            path = Configuration;
             sourceTree = "<group>";
         };
 /* End PBXGroup section */
