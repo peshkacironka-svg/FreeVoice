@@ -1,3 +1,4 @@
+
 name: FreeVoice iOS Build
 
 on:
@@ -18,6 +19,17 @@ jobs:
             -project FreeVoice.xcodeproj \
             -scheme FreeVoice \
             -sdk iphonesimulator \
+            -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Upload FreeVoice Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeVoice-iOS-Simulator
+          path: build/DerivedData/Build/Products/Debug-iphonesimulator/FreeVoice.app
+          if-no-files-found: error
+          retention-days: 7
+
