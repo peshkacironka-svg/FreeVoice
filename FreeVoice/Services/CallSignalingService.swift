@@ -97,6 +97,18 @@ final class CallSignalingService {
         }
     }
 
+    func observeCallsForUser(
+        uid: String,
+        onChange: @escaping ([QueryDocumentSnapshot]) -> Void
+    ) -> ListenerRegistration {
+        database.collection("calls")
+            .whereField("participants", arrayContains: uid)
+            .addSnapshotListener { snapshot, error in
+                guard error == nil, let snapshot else { return }
+                onChange(snapshot.documents)
+            }
+    }
+
     func observeCall(
         callId: String,
         onChange: @escaping ([String: Any]?) -> Void
