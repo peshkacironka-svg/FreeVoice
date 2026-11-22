@@ -76,7 +76,6 @@ export const respondToCall = onCall(
       if (call.calleeUid !== uid) throw new HttpsError("permission-denied", "Only the recipient can respond.");
       if (call.status !== "ringing") throw new HttpsError("failed-precondition", "Call is no longer ringing.");
       if (call.expiresAt instanceof Timestamp && call.expiresAt.toMillis() < Date.now()) {
-        transaction.update(ref, { status: "ended", updatedAt: FieldValue.serverTimestamp() });
         throw new HttpsError("deadline-exceeded", "The call invitation has expired.");
       }
       transaction.update(ref, {
