@@ -6,6 +6,11 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function isCallParticipant() {
+      return request.auth != null
+        && request.auth.uid in resource.data.participants;
+    }
+
     match /users/{userId} {
       allow get: if signedInAs(userId);
       allow list: if false;
@@ -23,6 +28,12 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
+    }
+
+    match /calls/{callId} {
+      allow get, list: if isCallParticipant();
+      // All call state changes must pass through authenticated Cloud Functions.
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {
