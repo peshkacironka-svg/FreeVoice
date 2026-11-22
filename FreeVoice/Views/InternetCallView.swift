@@ -312,6 +312,8 @@ final class InternetCallManager: ObservableObject {
 
 struct InternetCallView: View {
     let userUID: String
+    @Binding var isActive: Bool
+    @EnvironmentObject private var nearbyCallManager: CallManager
     @StateObject private var manager = InternetCallManager()
 
     var body: some View {
@@ -337,10 +339,12 @@ struct InternetCallView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.green)
+                        .disabled(nearbyCallManager.activeCall != nil)
                         Button("Decline", systemImage: "phone.down.fill") {
                             manager.rejectIncomingCall()
                         }
                         .buttonStyle(.bordered)
+                        .disabled(nearbyCallManager.activeCall != nil)
                     }
                 }
                 .padding()
@@ -377,7 +381,7 @@ struct InternetCallView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
-                .disabled(manager.destinationUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(manager.destinationUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || nearbyCallManager.activeCall != nil)
             }
 
             Text(manager.statusText)
@@ -388,6 +392,9 @@ struct InternetCallView: View {
         .padding()
         .onAppear { manager.startListening(uid: userUID) }
         .onDisappear { manager.stopListening() }
+        .onChange(of: manager.activeCallID) { _, callId in
+            isActive = callId != nil
+        }
         .alert("Internet call", isPresented: Binding(
             get: { manager.errorMessage != nil },
             set: { if !$0 { manager.clearError() } }
