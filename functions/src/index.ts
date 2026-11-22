@@ -257,6 +257,13 @@ export const addCallIceCandidate = onCall(
       if (call.status !== "ringing" && call.status !== "accepted") {
         throw new HttpsError("failed-precondition", "This call is no longer active.");
       }
+      if (
+        call.status === "ringing" &&
+        call.expiresAt instanceof Timestamp &&
+        call.expiresAt.toMillis() <= Date.now()
+      ) {
+        throw new HttpsError("deadline-exceeded", "The call invitation has expired.");
+      }
       const count = typeof call.iceCandidateCount === "number" ? call.iceCandidateCount : 0;
       if (count >= 128) {
         throw new HttpsError("resource-exhausted", "The ICE candidate limit for this call has been reached.");
