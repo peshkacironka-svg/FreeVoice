@@ -11,6 +11,13 @@ service cloud.firestore {
         && request.auth.uid in resource.data.participants;
     }
 
+    function isCallParticipantForCall(callId) {
+      return request.auth != null
+        && request.auth.uid in get(
+          /databases/$(database)/documents/calls/$(callId)
+        ).data.participants;
+    }
+
     match /users/{userId} {
       allow get: if signedInAs(userId);
       allow list: if false;
@@ -34,6 +41,12 @@ service cloud.firestore {
       allow get, list: if isCallParticipant();
       // All call state changes must pass through authenticated Cloud Functions.
       allow create, update, delete: if false;
+
+      match /iceCandidates/{candidateId} {
+        allow get, list: if isCallParticipantForCall(callId);
+        // Candidate creation is validated and rate-limited by Cloud Functions.
+        allow create, update, delete: if false;
+      }
     }
 
     match /{document=**} {
