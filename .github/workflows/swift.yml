@@ -1,8 +1,10 @@
-
 name: FreeVoice iOS Build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - fix/firebasecore-ci-build
   pull_request:
 
 jobs:
@@ -32,4 +34,3 @@ jobs:
           path: build/DerivedData/Build/Products/Debug-iphonesimulator/FreeVoice.app
           if-no-files-found: error
           retention-days: 7
-
