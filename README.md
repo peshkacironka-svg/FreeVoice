@@ -8,10 +8,12 @@ FreeVoice is an iOS voice-calling app under active development.
 - Firebase Email/Password Authentication.
 - Firestore user profile synchronization.
 - Firestore security rules: users can access their own profile; call documents are readable only by participants; clients cannot mutate call state.
-- Callable Cloud Functions for creating, accepting/rejecting, and ending calls.
+- Callable Cloud Functions for creating, accepting/rejecting, ending, expiring, and rate-limiting calls.
+- Authenticated Cloud Functions for exchanging WebRTC SDP offers/answers and bounded ICE candidate signaling.
 - App Check enforcement on callable call endpoints.
 - Scheduled cleanup that marks unanswered invitations as expired.
 - Firestore composite index for the scheduled expiry query.
+- Initial WebRTC iOS package and audio-only peer-connection service scaffold (not yet connected to the app call UI).
 - GitHub Actions builds the iOS Simulator target and compiles the Cloud Functions TypeScript.
 
 ## Important status
