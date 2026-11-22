@@ -35,6 +35,8 @@ final class WebRTCAudioService: NSObject {
 
     private let peerConnection: RTCPeerConnection
     private let audioTrack: RTCAudioTrack
+    private var hasRemoteDescription = false
+    private var pendingRemoteCandidates: [RTCIceCandidate] = []
 
     init(iceServers: [String] = ["stun:stun.l.google.com:19302"]) throws {
         let configuration = RTCConfiguration()
@@ -100,6 +102,8 @@ final class WebRTCAudioService: NSObject {
                 completion(.failure(error))
                 return
             }
+            self.hasRemoteDescription = true
+            self.flushPendingCandidates()
             self.peerConnection.answer(for: self.audioConstraints) { description, error in
                 if let error {
                     completion(.failure(error))
@@ -122,23 +126,37 @@ final class WebRTCAudioService: NSObject {
 
     func acceptAnswer(_ sdp: String, completion: @escaping (Error?) -> Void) {
         peerConnection.setRemoteDescription(
-            RTCSessionDescription(type: .answer, sdp: sdp),
-            completionHandler: completion
-        )
+            RTCSessionDescription(type: .answer, sdp: sdp)
+        ) { [weak self] error in
+            if error == nil {
+                self?.hasRemoteDescription = true
+                self?.flushPendingCandidates()
+            }
+            completion(error)
+        }
     }
 
     func addRemoteCandidate(
         sdp: String,
         sdpMid: String?,
         sdpMLineIndex: Int32,
-        completion: @escaping (Error?) -> Void = { _ in }
     ) {
         let candidate = RTCIceCandidate(
             sdp: sdp,
             sdpMLineIndex: sdpMLineIndex,
             sdpMid: sdpMid
         )
-        peerConnection.add(candidate, completionHandler: completion)
+        guard hasRemoteDescription else {
+            pendingRemoteCandidates.append(candidate)
+            return
+        }
+        peerConnection.add(candidate)
+    }
+
+    private func flushPendingCandidates() {
+        let candidates = pendingRemoteCandidates
+        pendingRemoteCandidates.removeAll()
+        candidates.forEach { peerConnection.add($0) }
     }
 
     func setMuted(_ muted: Bool) {
