@@ -28,14 +28,21 @@ final class InternetCallManager: ObservableObject {
         localUID = uid
         userCallsListener = signaling.observeCallsForUser(uid: uid) { [weak self] documents in
             Task { @MainActor in
-                guard let self, self.activeCallID == nil, self.incomingCallID == nil else { return }
-                guard let invitation = documents.first(where: {
+                guard let self, self.activeCallID == nil else { return }
+                if let invitation = documents.first(where: {
                     $0.data()["calleeUid"] as? String == uid &&
                     $0.data()["status"] as? String == "ringing"
-                }) else { return }
-                self.incomingCallID = invitation.documentID
-                self.incomingCallerUID = invitation.data()["callerUid"] as? String
-                self.statusText = "Incoming Internet call"
+                }) {
+                    self.incomingCallID = invitation.documentID
+                    self.incomingCallerUID = invitation.data()["callerUid"] as? String
+                    self.statusText = "Incoming Internet call"
+                } else {
+                    self.incomingCallID = nil
+                    self.incomingCallerUID = nil
+                    if self.statusText == "Incoming Internet call" {
+                        self.statusText = "Ready for an Internet call"
+                    }
+                }
             }
         }
     }
