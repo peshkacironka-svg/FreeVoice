@@ -3,6 +3,7 @@ import FirebaseAuth
 
 struct ContentView: View {
     @EnvironmentObject private var callManager: CallManager
+    private let profileService = UserProfileService()
     @State private var currentUser: User?
     @State private var authListener: AuthStateDidChangeListenerHandle?
     @State private var email = ""
@@ -34,7 +35,15 @@ struct ContentView: View {
         .onAppear {
             if authListener == nil {
                 authListener = Auth.auth().addStateDidChangeListener { _, user in
-                    currentUser = user
+                    Task { @MainActor in
+                        currentUser = user
+                        guard let user else { return }
+                        do {
+                            try await profileService.syncProfile(for: user)
+                        } catch {
+                            authError = "Could not sync your account profile: \(error.localizedDescription)"
+                        }
+                    }
                 }
             }
         }
