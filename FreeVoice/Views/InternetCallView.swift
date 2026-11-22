@@ -253,12 +253,11 @@ final class InternetCallManager: ObservableObject {
         if data["callerUid"] as? String == uid,
            let answer = data["answerSdp"] as? String,
            !remoteDescriptionApplied {
+            remoteDescriptionApplied = true
             audio?.acceptAnswer(answer) { [weak self] error in
                 Task { @MainActor in
                     if let error {
                         self?.failCall(error)
-                    } else {
-                        self?.remoteDescriptionApplied = true
                     }
                 }
             }
