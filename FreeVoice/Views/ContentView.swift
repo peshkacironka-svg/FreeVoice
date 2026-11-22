@@ -193,7 +193,7 @@ struct ContentView: View {
                 .padding(.horizontal)
             }
 
-            Text("Your account is connected. Voice calls currently work between nearby iPhones; Internet calling is the next development step.")
+            Text("Nearby calls use local device discovery. Internet calling is now in initial integration testing and requires the Firebase backend to be deployed.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
