@@ -10,7 +10,7 @@ FreeVoice is an iOS voice-calling app under active development.
 - Firestore security rules: users can access their own profile; call documents are readable only by participants; clients cannot mutate call state.
 - Callable Cloud Functions for creating, accepting/rejecting, ending, expiring, and rate-limiting calls.
 - Authenticated Cloud Functions for exchanging WebRTC SDP offers/answers and bounded ICE candidate signaling.
-- App Check enforcement on callable call endpoints.
+- App Check enforcement on callable call endpoints, with the iOS debug provider and production App Attest provider wired into app startup.
 - Scheduled cleanup that marks unanswered invitations as expired.
 - Firestore composite index for the scheduled expiry query.
 - Initial WebRTC iOS package and audio-only peer-connection service scaffold (not yet connected to the app call UI).
@@ -33,7 +33,7 @@ The repository is configured for Firebase project `freevoice-dd402`.
 
 Before deploying:
 1. Create a Cloud Firestore database in Firebase Console.
-2. Configure Firebase App Check for the iOS app and register the production attestation provider.
+2. Register the iOS app in Firebase App Check. On a debug build, copy the debug token from the Xcode device/simulator log into Firebase Console; for production, enable App Attest for the registered iOS app.
 3. Deploy Firestore rules, indexes, and Cloud Functions:
    ```sh
    npm --prefix functions install
