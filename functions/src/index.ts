@@ -161,3 +161,111 @@ export const expireStaleCalls = onSchedule(
     await batch.commit();
   }
 );
+
+
+// Exchange the SDP offer/answer only through the trusted callable backend.
+export const setCallDescription = onCall(
+  { enforceAppCheck: true, maxInstances: 20 },
+  async (request) => {
+    const uid = requireUid(request);
+    requireAppCheck(request);
+    const { callId, type, sdp } = request.data ?? {};
+
+    if (
+      typeof callId !== "string" || callId.length < 1 || callId.length > 128 ||
+      (type !== "offer" && type !== "answer") ||
+      typeof sdp !== "string" || sdp.length < 1 || sdp.length > 100_000
+    ) {
+      throw new HttpsError("invalid-argument", "A valid callId, SDP type, and SDP are required.");
+    }
+
+    const ref = db.collection("calls").doc(callId);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) throw new HttpsError("not-found", "Call not found.");
+      const call = snapshot.data()!;
+      if (!Array.isArray(call.participants) || !call.participants.includes(uid)) {
+        throw new HttpsError("permission-denied", "You are not a participant in this call.");
+      }
+
+      if (type === "offer") {
+        if (call.callerUid !== uid || call.status !== "ringing") {
+          throw new HttpsError("failed-precondition", "Only the caller can submit an offer while ringing.");
+        }
+        if (typeof call.offerSdp === "string") {
+          throw new HttpsError("already-exists", "An offer has already been submitted.");
+        }
+        transaction.update(ref, {
+          offerSdp: sdp,
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      } else {
+        if (call.calleeUid !== uid || call.status !== "accepted") {
+          throw new HttpsError("failed-precondition", "Only the accepted recipient can submit an answer.");
+        }
+        if (typeof call.answerSdp === "string") {
+          throw new HttpsError("already-exists", "An answer has already been submitted.");
+        }
+        transaction.update(ref, {
+          answerSdp: sdp,
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      }
+    });
+
+    return { callId, type, saved: true };
+  }
+);
+
+// ICE candidates are written to a participant-readable subcollection. A per-call
+// cap bounds signaling storage and prevents unbounded candidate spam.
+export const addCallIceCandidate = onCall(
+  { enforceAppCheck: true, maxInstances: 20 },
+  async (request) => {
+    const uid = requireUid(request);
+    requireAppCheck(request);
+    const { callId, sdp, sdpMid, sdpMLineIndex } = request.data ?? {};
+
+    if (
+      typeof callId !== "string" || callId.length < 1 || callId.length > 128 ||
+      typeof sdp !== "string" || sdp.length < 1 || sdp.length > 4_096 ||
+      (sdpMid !== null && sdpMid !== undefined &&
+        (typeof sdpMid !== "string" || sdpMid.length > 128)) ||
+      !Number.isInteger(sdpMLineIndex) || sdpMLineIndex < 0 || sdpMLineIndex > 255
+    ) {
+      throw new HttpsError("invalid-argument", "Invalid ICE candidate payload.");
+    }
+
+    const callRef = db.collection("calls").doc(callId);
+    const candidateRef = callRef.collection("iceCandidates").doc();
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(callRef);
+      if (!snapshot.exists) throw new HttpsError("not-found", "Call not found.");
+      const call = snapshot.data()!;
+      if (!Array.isArray(call.participants) || !call.participants.includes(uid)) {
+        throw new HttpsError("permission-denied", "You are not a participant in this call.");
+      }
+      if (call.status !== "ringing" && call.status !== "accepted") {
+        throw new HttpsError("failed-precondition", "This call is no longer active.");
+      }
+      const count = typeof call.iceCandidateCount === "number" ? call.iceCandidateCount : 0;
+      if (count >= 128) {
+        throw new HttpsError("resource-exhausted", "The ICE candidate limit for this call has been reached.");
+      }
+
+      transaction.create(candidateRef, {
+        fromUid: uid,
+        sdp,
+        sdpMid: sdpMid ?? null,
+        sdpMLineIndex,
+        createdAt: FieldValue.serverTimestamp()
+      });
+      transaction.update(callRef, {
+        iceCandidateCount: count + 1,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+    });
+
+    return { callId, candidateId: candidateRef.id, saved: true };
+  }
+);
