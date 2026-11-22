@@ -23,7 +23,7 @@ function requireAppCheck(request: { app?: unknown }): void {
 }
 
 export const createCall = onCall(
-  { enforceAppCheck: true, maxInstances: 20 },
+  { region: "europe-west3", enforceAppCheck: true, maxInstances: 20 },
   async (request) => {
     const callerUid = requireUid(request);
     requireAppCheck(request);
@@ -75,7 +75,7 @@ export const createCall = onCall(
 );
 
 export const respondToCall = onCall(
-  { enforceAppCheck: true, maxInstances: 20 },
+  { region: "europe-west3", enforceAppCheck: true, maxInstances: 20 },
   async (request) => {
     const uid = requireUid(request);
     requireAppCheck(request);
@@ -106,7 +106,7 @@ export const respondToCall = onCall(
 );
 
 export const endCall = onCall(
-  { enforceAppCheck: true, maxInstances: 20 },
+  { region: "europe-west3", enforceAppCheck: true, maxInstances: 20 },
   async (request) => {
     const uid = requireUid(request);
     requireAppCheck(request);
@@ -138,7 +138,7 @@ export const endCall = onCall(
 // Close invitations that were never answered. The bounded batch avoids exceeding
 // Firestore's 500-write transaction/batch limit.
 export const expireStaleCalls = onSchedule(
-  { schedule: "every 1 minutes", timeZone: "Etc/UTC", maxInstances: 1 },
+  { schedule: "every 1 minutes", timeZone: "Etc/UTC", region: "europe-west3", maxInstances: 1 },
   async () => {
     const now = Timestamp.now();
     const staleCalls = await db.collection("calls")
@@ -165,7 +165,7 @@ export const expireStaleCalls = onSchedule(
 
 // Exchange the SDP offer/answer only through the trusted callable backend.
 export const setCallDescription = onCall(
-  { enforceAppCheck: true, maxInstances: 20 },
+  { region: "europe-west3", enforceAppCheck: true, maxInstances: 20 },
   async (request) => {
     const uid = requireUid(request);
     requireAppCheck(request);
@@ -220,7 +220,7 @@ export const setCallDescription = onCall(
 // ICE candidates are written to a participant-readable subcollection. A per-call
 // cap bounds signaling storage and prevents unbounded candidate spam.
 export const addCallIceCandidate = onCall(
-  { enforceAppCheck: true, maxInstances: 20 },
+  { region: "europe-west3", enforceAppCheck: true, maxInstances: 20 },
   async (request) => {
     const uid = requireUid(request);
     requireAppCheck(request);
