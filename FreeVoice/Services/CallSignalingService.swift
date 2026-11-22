@@ -6,7 +6,7 @@ import Foundation
 /// Firestore; this service only exchanges call state, SDP, and ICE candidates.
 final class CallSignalingService {
     private let database = Firestore.firestore()
-    private let functions = Functions.functions()
+    private let functions = Functions.functions(region: "europe-west3")
 
     func createCall(
         calleeUID: String,
