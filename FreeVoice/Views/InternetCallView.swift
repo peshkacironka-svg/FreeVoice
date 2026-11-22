@@ -42,7 +42,12 @@ final class InternetCallManager: ObservableObject {
     func stopListening() {
         userCallsListener?.remove()
         userCallsListener = nil
+        if let callId = activeCallID {
+            signaling.endCall(callId: callId) { _ in }
+        }
         cleanupActiveCall()
+        incomingCallID = nil
+        incomingCallerUID = nil
         localUID = nil
     }
 
