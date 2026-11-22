@@ -13,7 +13,7 @@ FreeVoice is an iOS voice-calling app under active development.
 - App Check enforcement on callable call endpoints, with the iOS debug provider and production App Attest provider wired into app startup.
 - Scheduled cleanup that marks unanswered invitations as expired.
 - Firestore composite index for the scheduled expiry query.
-- Initial WebRTC iOS package and audio-only peer-connection service scaffold (not yet connected to the app call UI).
+- WebRTC audio-only peer connection connected to Firebase SDP/ICE signaling and a foreground outgoing/incoming call screen; calls are not yet end-to-end tested on deployed infrastructure.
 - GitHub Actions builds the iOS Simulator target and compiles the Cloud Functions TypeScript.
 
 ## Important status
