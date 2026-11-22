@@ -11,6 +11,7 @@
 		A10000000000000000000007 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000001 /* FirebaseCore */; };
 		A10000000000000000000009 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* FirebaseAuth */; };
 		A10000000000000000000010 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* FirebaseFirestore */; };
+		A10000000000000000000012 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000004 /* WebRTC */; };
 		A10000000000000000000011 /* UserProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* UserProfileService.swift */; };
 		A10000000000000000000001 /* FreeVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* FreeVoiceApp.swift */; };
 		A10000000000000000000002 /* CallSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* CallSession.swift */; };
@@ -34,7 +35,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007 /* FirebaseCore in Frameworks */, A10000000000000000000009 /* FirebaseAuth in Frameworks */, A10000000000000000000010 /* FirebaseFirestore in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007 /* FirebaseCore in Frameworks */, A10000000000000000000009 /* FirebaseAuth in Frameworks */, A10000000000000000000010 /* FirebaseFirestore in Frameworks */, A10000000000000000000012 /* WebRTC in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,7 +79,7 @@
 			productName = FreeVoice;
 			productReference = A20000000000000000000008 /* FreeVoice.app */;
 			productType = "com.apple.product-type.application";
-			packageProductDependencies = (A90000000000000000000001 /* FirebaseCore */, A90000000000000000000002 /* FirebaseAuth */, A90000000000000000000003 /* FirebaseFirestore */,);
+			packageProductDependencies = (A90000000000000000000001 /* FirebaseCore */, A90000000000000000000002 /* FirebaseAuth */, A90000000000000000000003 /* FirebaseFirestore */, A90000000000000000000004 /* WebRTC */,);
 		};
 /* End PBXNativeTarget section */
 
@@ -104,7 +105,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (A50000000000000000000001 /* FreeVoice */);
-			packageReferences = (AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,);
+			packageReferences = (AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */, AA000000000000000000002 /* XCRemoteSwiftPackageReference "WebRTC" */,);
 		};
 /* End PBXProject section */
 
@@ -122,6 +123,8 @@
 		A90000000000000000000002 /* FirebaseAuth */ = {isa = XCSwiftPackageProductDependency; package = AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseAuth; };
 		A90000000000000000000003 /* FirebaseFirestore */ = {isa = XCSwiftPackageProductDependency; package = AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseFirestore; };
 		AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 12.0.0; }; };
+		A90000000000000000000004 /* WebRTC */ = {isa = XCSwiftPackageProductDependency; package = AA000000000000000000002 /* XCRemoteSwiftPackageReference "WebRTC" */; productName = WebRTC; };
+		AA000000000000000000002 /* XCRemoteSwiftPackageReference "WebRTC" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/stasel/WebRTC.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 158.0.0; }; };
 	};
 	rootObject = A60000000000000000000001 /* PBXProject */;
 }
