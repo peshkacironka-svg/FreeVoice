@@ -17,6 +17,7 @@
 		A10000000000000000000011 /* UserProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* UserProfileService.swift */; };
 		A10000000000000000000013 /* WebRTCAudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* WebRTCAudioService.swift */; };
 		A10000000000000000000015 /* CallSignalingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* CallSignalingService.swift */; };
+		A10000000000000000000017 /* InternetCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* InternetCallView.swift */; };
 		A10000000000000000000001 /* FreeVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* FreeVoiceApp.swift */; };
 		A10000000000000000000002 /* CallSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* CallSession.swift */; };
 		A10000000000000000000003 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* CallManager.swift */; };
@@ -38,6 +39,7 @@
 		A20000000000000000000010 /* UserProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileService.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* WebRTCAudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCAudioService.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* CallSignalingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallSignalingService.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* InternetCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternetCallView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,7 +72,7 @@
 		A40000000000000000000004 /* App */ = {isa = PBXGroup; children = (A20000000000000000000001 /* FreeVoiceApp.swift */); path = App; sourceTree = "<group>"; };
 		A40000000000000000000005 /* Models */ = {isa = PBXGroup; children = (A20000000000000000000002 /* CallSession.swift */); path = Models; sourceTree = "<group>"; };
 		A40000000000000000000006 /* Services */ = {isa = PBXGroup; children = (A20000000000000000000003 /* CallManager.swift */, A20000000000000000000004 /* NearbyAudioService.swift */, A20000000000000000000010 /* UserProfileService.swift */, A20000000000000000000011 /* WebRTCAudioService.swift */, A20000000000000000000012 /* CallSignalingService.swift */); path = Services; sourceTree = "<group>"; };
-		A40000000000000000000007 /* Views */ = {isa = PBXGroup; children = (A20000000000000000000005 /* ContentView.swift */, A20000000000000000000006 /* ActiveCallView.swift */); path = Views; sourceTree = "<group>"; };
+		A40000000000000000000007 /* Views */ = {isa = PBXGroup; children = (A20000000000000000000005 /* ContentView.swift */, A20000000000000000000006 /* ActiveCallView.swift */, A20000000000000000000013 /* InternetCallView.swift */); path = Views; sourceTree = "<group>"; };
 		A40000000000000000000008 /* Configuration */ = {isa = PBXGroup; children = (A20000000000000000000007 /* Info.plist */); path = Configuration; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -90,7 +92,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A30000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* FreeVoiceApp.swift in Sources */, A10000000000000000000002 /* CallSession.swift in Sources */, A10000000000000000000003 /* CallManager.swift in Sources */, A10000000000000000000004 /* NearbyAudioService.swift in Sources */, A10000000000000000000005 /* ContentView.swift in Sources */, A10000000000000000000006 /* ActiveCallView.swift in Sources */, A10000000000000000000011 /* UserProfileService.swift in Sources */, A10000000000000000000013 /* WebRTCAudioService.swift in Sources */, A10000000000000000000015 /* CallSignalingService.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* FreeVoiceApp.swift in Sources */, A10000000000000000000002 /* CallSession.swift in Sources */, A10000000000000000000003 /* CallManager.swift in Sources */, A10000000000000000000004 /* NearbyAudioService.swift in Sources */, A10000000000000000000005 /* ContentView.swift in Sources */, A10000000000000000000006 /* ActiveCallView.swift in Sources */, A10000000000000000000011 /* UserProfileService.swift in Sources */, A10000000000000000000013 /* WebRTCAudioService.swift in Sources */, A10000000000000000000015 /* CallSignalingService.swift in Sources */, A10000000000000000000017 /* InternetCallView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
