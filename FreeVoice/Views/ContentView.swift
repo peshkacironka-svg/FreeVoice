@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var callManager: CallManager
     private let profileService = UserProfileService()
     @State private var currentUser: User?
+    @State private var isInternetCallActive = false
     @State private var authListener: AuthStateDidChangeListenerHandle?
     @State private var email = ""
     @State private var password = ""
@@ -140,7 +141,7 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            InternetCallView(userUID: user.uid)
+            InternetCallView(userUID: user.uid, isActive: $isInternetCallActive)
 
             Divider()
                 .padding(.horizontal)
@@ -186,6 +187,7 @@ struct ContentView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.green)
+                        .disabled(isInternetCallActive)
                     }
                 }
                 .padding(.horizontal)
