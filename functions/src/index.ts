@@ -81,7 +81,8 @@ export const respondToCall = onCall(
     requireAppCheck(request);
     const { callId, response } = request.data ?? {};
 
-    if (typeof callId !== "string" || !["accepted", "rejected"].includes(response)) {
+    if (typeof callId !== "string" || callId.length < 1 || callId.length > 128 ||
+        !["accepted", "rejected"].includes(response)) {
       throw new HttpsError("invalid-argument", "A valid callId and response are required.");
     }
 
@@ -111,7 +112,7 @@ export const endCall = onCall(
     const uid = requireUid(request);
     requireAppCheck(request);
     const callId = request.data?.callId;
-    if (typeof callId !== "string") {
+    if (typeof callId !== "string" || callId.length < 1 || callId.length > 128) {
       throw new HttpsError("invalid-argument", "A valid callId is required.");
     }
 
