@@ -1,3 +1,4 @@
+import AVFoundation
 import FirebaseFirestore
 import SwiftUI
 import WebRTC
@@ -60,6 +61,17 @@ final class InternetCallManager: ObservableObject {
         }
         guard activeCallID == nil, incomingCallID == nil else { return }
 
+        requestMicrophonePermission { [weak self] granted in
+            guard let self else { return }
+            guard granted else {
+                self.errorMessage = "Microphone access is required for Internet calls. Enable it in iPhone Settings."
+                return
+            }
+            self.createOutgoingCall(to: recipient)
+        }
+    }
+
+    private func createOutgoingCall(to recipient: String) {
         statusText = "Creating secure call invitation…"
         signaling.createCall(calleeUID: recipient) { [weak self] result in
             Task { @MainActor in
@@ -92,18 +104,33 @@ final class InternetCallManager: ObservableObject {
 
     func answerIncomingCall() {
         guard let callId = incomingCallID else { return }
-        signaling.respondToCall(callId: callId, accepted: true) { [weak self] result in
-            Task { @MainActor in
-                guard let self else { return }
-                switch result {
-                case .failure(let error):
-                    self.errorMessage = error.localizedDescription
-                case .success:
-                    self.activeCallID = callId
-                    self.incomingCallID = nil
-                    self.statusText = "Connecting…"
-                    self.prepareAudioAndSignaling(callId: callId)
+        requestMicrophonePermission { [weak self] granted in
+            guard let self else { return }
+            guard granted else {
+                self.errorMessage = "Microphone access is required to answer. Enable it in iPhone Settings."
+                return
+            }
+            self.signaling.respondToCall(callId: callId, accepted: true) { [weak self] result in
+                Task { @MainActor in
+                    guard let self else { return }
+                    switch result {
+                    case .failure(let error):
+                        self.errorMessage = error.localizedDescription
+                    case .success:
+                        self.activeCallID = callId
+                        self.incomingCallID = nil
+                        self.statusText = "Connecting…"
+                        self.prepareAudioAndSignaling(callId: callId)
+                    }
                 }
+            }
+        }
+    }
+
+    private func requestMicrophonePermission(_ completion: @escaping (Bool) -> Void) {
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                completion(granted)
             }
         }
     }
