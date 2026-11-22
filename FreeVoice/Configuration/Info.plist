@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>FreeVoice uses the microphone to send your voice during nearby calls.</string>
+    <string>FreeVoice uses the microphone to send your voice during nearby and Internet calls.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>FreeVoice uses your local network to discover and connect to nearby iPhones for voice calls.</string>
     <key>NSBonjourServices</key>
