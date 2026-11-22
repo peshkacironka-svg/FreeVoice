@@ -36,22 +36,38 @@ export const createCall = onCall(
       throw new HttpsError("invalid-argument", "You cannot call yourself.");
     }
 
-    const callee = await db.collection("users").doc(calleeUid).get();
-    if (!callee.exists) {
-      throw new HttpsError("not-found", "The recipient account was not found.");
-    }
-
     const callRef = db.collection("calls").doc();
+    const rateLimitRef = db.collection("callRateLimits").doc(callerUid);
     const expiresAt = Timestamp.fromMillis(Date.now() + 60_000);
-    await callRef.create({
-      callId: callRef.id,
-      callerUid,
-      calleeUid,
-      participants: [callerUid, calleeUid],
-      status: "ringing" satisfies CallStatus,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      expiresAt
+
+    await db.runTransaction(async (transaction) => {
+      const [callee, rateLimit] = await Promise.all([
+        transaction.get(db.collection("users").doc(calleeUid)),
+        transaction.get(rateLimitRef)
+      ]);
+      if (!callee.exists) {
+        throw new HttpsError("not-found", "The recipient account was not found.");
+      }
+
+      const lastCallAt = rateLimit.data()?.lastCallAt;
+      if (lastCallAt instanceof Timestamp && Date.now() - lastCallAt.toMillis() < 5_000) {
+        throw new HttpsError("resource-exhausted", "Please wait before starting another call.");
+      }
+
+      transaction.create(callRef, {
+        callId: callRef.id,
+        callerUid,
+        calleeUid,
+        participants: [callerUid, calleeUid],
+        status: "ringing" satisfies CallStatus,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        expiresAt
+      });
+      transaction.set(rateLimitRef, {
+        lastCallAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+      });
     });
 
     return { callId: callRef.id, status: "ringing", expiresAt: expiresAt.toMillis() };
