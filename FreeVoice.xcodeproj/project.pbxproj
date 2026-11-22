@@ -116,7 +116,7 @@
 		A70000000000000000000002 /* PBXNativeTarget */ = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000003 /* Target Debug */, A80000000000000000000004 /* Target Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 
-		A90000000000000000000001 /* FirebaseCore */ = {isa = PBXPackageProductDependency; package = AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseCore; };
+		A90000000000000000000001 /* FirebaseCore */ = {isa = XCSwiftPackageProductDependency; package = AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseCore; };
 		AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 12.0.0; }; };
 	};
 	rootObject = A60000000000000000000001 /* Project object */;
