@@ -1,34 +1,143 @@
 import SwiftUI
+import FirebaseAuth
 
 struct ContentView: View {
     @EnvironmentObject private var callManager: CallManager
+    @State private var currentUser: User?
+    @State private var authListener: AuthStateDidChangeListenerHandle?
+    @State private var email = ""
+    @State private var password = ""
+    @State private var isCreatingAccount = false
+    @State private var isWorking = false
+    @State private var authError: String?
     @State private var contactName = ""
 
     var body: some View {
         NavigationStack {
             Group {
-                if let call = callManager.activeCall {
-                    ActiveCallView(call: call)
+                if let currentUser {
+                    authenticatedContent(user: currentUser)
                 } else {
-                    contactPicker
+                    authenticationForm
                 }
             }
             .navigationTitle("FreeVoice")
             .alert("FreeVoice", isPresented: errorIsPresented) {
                 Button("OK", role: .cancel) {
                     callManager.dismissError()
+                    authError = nil
                 }
             } message: {
-                Text(callManager.errorMessage ?? "An unexpected error occurred.")
+                Text(authError ?? callManager.errorMessage ?? "An unexpected error occurred.")
+            }
+        }
+        .onAppear {
+            if authListener == nil {
+                authListener = Auth.auth().addStateDidChangeListener { _, user in
+                    currentUser = user
+                }
+            }
+        }
+        .onDisappear {
+            if let authListener {
+                Auth.auth().removeStateDidChangeListener(authListener)
+                self.authListener = nil
             }
         }
     }
 
     private var errorIsPresented: Binding<Bool> {
         Binding(
-            get: { callManager.errorMessage != nil },
-            set: { if !$0 { callManager.dismissError() } }
+            get: { authError != nil || callManager.errorMessage != nil },
+            set: {
+                if !$0 {
+                    authError = nil
+                    callManager.dismissError()
+                }
+            }
         )
+    }
+
+    private var authenticationForm: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "phone.bubble.left.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(.green)
+
+            Text(isCreatingAccount ? "Create your FreeVoice account" : "Sign in to FreeVoice")
+                .font(.title2.weight(.semibold))
+
+            Text("Use your email address and password to securely access your account.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            TextField("Email", text: $email)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textFieldStyle(.roundedBorder)
+
+            SecureField("Password (at least 6 characters)", text: $password)
+                .textContentType(isCreatingAccount ? .newPassword : .password)
+                .textFieldStyle(.roundedBorder)
+
+            Button {
+                authenticate()
+            } label: {
+                HStack {
+                    if isWorking {
+                        ProgressView().tint(.white)
+                    }
+                    Text(isCreatingAccount ? "Create account" : "Sign in")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.green)
+            .disabled(isWorking || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+
+            Button(isCreatingAccount ? "Already have an account? Sign in" : "New to FreeVoice? Create account") {
+                isCreatingAccount.toggle()
+                authError = nil
+            }
+            .font(.footnote)
+            .disabled(isWorking)
+        }
+        .padding(24)
+    }
+
+    private func authenticatedContent(user: User) -> some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Signed in")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(user.email ?? "FreeVoice user")
+                        .font(.subheadline.weight(.medium))
+                }
+                Spacer()
+                Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
+                    do {
+                        try Auth.auth().signOut()
+                    } catch {
+                        authError = error.localizedDescription
+                    }
+                }
+                .font(.footnote)
+            }
+            .padding(.horizontal)
+
+            if let call = callManager.activeCall {
+                ActiveCallView(call: call)
+            } else {
+                contactPicker
+            }
+        }
+        .padding(.top)
     }
 
     private var contactPicker: some View {
@@ -68,12 +177,31 @@ struct ContentView: View {
                 .padding(.horizontal)
             }
 
-            Text("FreeVoice calls work between nearby iPhones. Both people need this app open and local-network access enabled.")
+            Text("Your account is connected. Voice calls currently work between nearby iPhones; Internet calling is the next development step.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
         .padding()
+    }
+
+    private func authenticate() {
+        isWorking = true
+        authError = nil
+        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let completion: (AuthDataResult?, Error?) -> Void = { _, error in
+            isWorking = false
+            if let error {
+                authError = error.localizedDescription
+            }
+        }
+
+        if isCreatingAccount {
+            Auth.auth().createUser(withEmail: cleanEmail, password: password, completion: completion)
+        } else {
+            Auth.auth().signIn(withEmail: cleanEmail, password: password, completion: completion)
+        }
     }
 }
