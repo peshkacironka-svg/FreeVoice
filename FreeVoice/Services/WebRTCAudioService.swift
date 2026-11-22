@@ -139,7 +139,7 @@ final class WebRTCAudioService: NSObject {
     func addRemoteCandidate(
         sdp: String,
         sdpMid: String?,
-        sdpMLineIndex: Int32,
+        sdpMLineIndex: Int32
     ) {
         let candidate = RTCIceCandidate(
             sdp: sdp,
@@ -150,13 +150,13 @@ final class WebRTCAudioService: NSObject {
             pendingRemoteCandidates.append(candidate)
             return
         }
-        peerConnection.add(candidate)
+        peerConnection.add(candidate) { _ in }
     }
 
     private func flushPendingCandidates() {
         let candidates = pendingRemoteCandidates
         pendingRemoteCandidates.removeAll()
-        candidates.forEach { peerConnection.add($0) }
+        candidates.forEach { candidate in peerConnection.add(candidate) { _ in } }
     }
 
     func setMuted(_ muted: Bool) {
