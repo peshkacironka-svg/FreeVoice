@@ -79,7 +79,7 @@ final class InternetCallManager: ObservableObject {
     }
 
     private func createOutgoingCall(to recipient: String) {
-        statusText = "Creating secure call invitation…"
+        statusText = "Creating call invitation…"
         signaling.createCall(calleeUID: recipient) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
