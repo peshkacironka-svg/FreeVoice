@@ -18,7 +18,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A20000000000000000000009 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A20000000000000000000009 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "../GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000001 /* FreeVoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeVoiceApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* CallSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallSession.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
