@@ -140,6 +140,11 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
+            InternetCallView(userUID: user.uid)
+
+            Divider()
+                .padding(.horizontal)
+
             if let call = callManager.activeCall {
                 ActiveCallView(call: call)
             } else {
