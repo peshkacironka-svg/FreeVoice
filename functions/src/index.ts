@@ -190,8 +190,16 @@ export const setCallDescription = onCall(
       }
 
       if (type === "offer") {
-        if (call.callerUid !== uid || call.status !== "ringing") {
-          throw new HttpsError("failed-precondition", "Only the caller can submit an offer while ringing.");
+        // The callee may accept before the caller's SDP write reaches Firestore.
+        // Allow the caller to submit the single offer while ringing or just accepted.
+        if (
+          call.callerUid !== uid ||
+          (call.status !== "ringing" && call.status !== "accepted") ||
+          (call.status === "ringing" &&
+            call.expiresAt instanceof Timestamp &&
+            call.expiresAt.toMillis() <= Date.now())
+        ) {
+          throw new HttpsError("failed-precondition", "Only the caller can submit an offer for an active call.");
         }
         if (typeof call.offerSdp === "string") {
           throw new HttpsError("already-exists", "An offer has already been submitted.");
