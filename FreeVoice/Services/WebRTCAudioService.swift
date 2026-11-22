@@ -27,19 +27,20 @@ final class WebRTCAudioService: NSObject {
 
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
-        return RTCPeerConnectionFactory()
+        return RTCPeerConnectionFactory(
+            encoderFactory: RTCDefaultVideoEncoderFactory(),
+            decoderFactory: RTCDefaultVideoDecoderFactory()
+        )
     }()
 
     private let peerConnection: RTCPeerConnection
     private let audioTrack: RTCAudioTrack
 
-    override init() throws {
+    init(iceServers: [String] = ["stun:stun.l.google.com:19302"]) throws {
         let configuration = RTCConfiguration()
         // STUN helps discover public network paths. Production deployment must
         // also configure authenticated TURN credentials for reliable NAT traversal.
-        configuration.iceServers = [
-            RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"])
-        ]
+        configuration.iceServers = [RTCIceServer(urlStrings: iceServers)]
         configuration.sdpSemantics = .unifiedPlan
         configuration.continualGatheringPolicy = .gatherContinually
 
@@ -126,13 +127,18 @@ final class WebRTCAudioService: NSObject {
         )
     }
 
-    func addRemoteCandidate(sdp: String, sdpMid: String?, sdpMLineIndex: Int32) {
+    func addRemoteCandidate(
+        sdp: String,
+        sdpMid: String?,
+        sdpMLineIndex: Int32,
+        completion: @escaping (Error?) -> Void = { _ in }
+    ) {
         let candidate = RTCIceCandidate(
             sdp: sdp,
             sdpMLineIndex: sdpMLineIndex,
             sdpMid: sdpMid
         )
-        peerConnection.add(candidate)
+        peerConnection.add(candidate, completionHandler: completion)
     }
 
     func setMuted(_ muted: Bool) {
