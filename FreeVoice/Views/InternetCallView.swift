@@ -321,7 +321,7 @@ struct InternetCallView: View {
             Text("Internet voice calls")
                 .font(.headline)
 
-            Text("Your FreeVoice UID: \\(userUID)")
+            Text("Your FreeVoice UID: \(userUID)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
