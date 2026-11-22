@@ -285,6 +285,11 @@ struct InternetCallView: View {
             Text("Internet voice calls")
                 .font(.headline)
 
+            Text("Your FreeVoice UID: \\(userUID)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
             if let incomingCallID = manager.incomingCallID {
                 VStack(spacing: 8) {
                     Text("Incoming call")
