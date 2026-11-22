@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000007 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000001 /* FirebaseCore */; };
 		A10000000000000000000001 /* FreeVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* FreeVoiceApp.swift */; };
 		A10000000000000000000002 /* CallSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* CallSession.swift */; };
 		A10000000000000000000003 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* CallManager.swift */; };
@@ -27,7 +28,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007 /* FirebaseCore in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -70,6 +71,7 @@
 			productName = FreeVoice;
 			productReference = A20000000000000000000008 /* FreeVoice.app */;
 			productType = "com.apple.product-type.application";
+			packageProductDependencies = (A90000000000000000000001 /* FirebaseCore */,);
 		};
 /* End PBXNativeTarget section */
 
@@ -95,6 +97,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (A50000000000000000000001 /* FreeVoice */);
+			packageReferences = (AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,);
 		};
 /* End PBXProject section */
 
@@ -110,6 +113,8 @@
 		A70000000000000000000002 /* PBXNativeTarget */ = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000003 /* Target Debug */, A80000000000000000000004 /* Target Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 
+		A90000000000000000000001 /* FirebaseCore */ = {isa = PBXPackageProductDependency; package = AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseCore; };
+		AA000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 12.0.0; }; };
 	};
 	rootObject = A60000000000000000000001 /* Project object */;
 }
