@@ -1,11 +1,12 @@
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 
 initializeApp();
 const db = getFirestore();
 
-type CallStatus = "ringing" | "accepted" | "rejected" | "ended";
+type CallStatus = "ringing" | "accepted" | "rejected" | "ended" | "expired";
 
 function requireUid(request: { auth?: { uid: string } | null }): string {
   const uid = request.auth?.uid;
@@ -114,5 +115,33 @@ export const endCall = onCall(
       });
     });
     return { callId, status: "ended" };
+  }
+);
+
+
+// Close invitations that were never answered. The bounded batch avoids exceeding
+// Firestore's 500-write transaction/batch limit.
+export const expireStaleCalls = onSchedule(
+  { schedule: "every 1 minutes", timeZone: "Etc/UTC", maxInstances: 1 },
+  async () => {
+    const now = Timestamp.now();
+    const staleCalls = await db.collection("calls")
+      .where("status", "==", "ringing")
+      .where("expiresAt", "<=", now)
+      .orderBy("expiresAt", "asc")
+      .limit(450)
+      .get();
+
+    if (staleCalls.empty) return;
+
+    const batch = db.batch();
+    for (const document of staleCalls.docs) {
+      batch.update(document.ref, {
+        status: "expired" satisfies CallStatus,
+        updatedAt: FieldValue.serverTimestamp(),
+        expiredAt: FieldValue.serverTimestamp()
+      });
+    }
+    await batch.commit();
   }
 );
