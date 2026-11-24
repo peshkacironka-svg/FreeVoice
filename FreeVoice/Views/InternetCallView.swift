@@ -90,16 +90,18 @@ final class InternetCallManager: ObservableObject {
                 case .success(let callId):
                     self.activeCallID = callId
                     self.statusText = "Calling…"
-                    self.prepareAudioAndSignaling(callId: callId)
-                    self.audio?.createOffer { [weak self] offerResult in
+                    self.prepareAudioAndSignaling(callId: callId) { [weak self] connection in
                         guard let self else { return }
-                        switch offerResult {
-                        case .failure(let error):
-                            Task { @MainActor in self.failCall(error) }
-                        case .success(let sdp):
-                            self.signaling.setDescription(callId: callId, type: "offer", sdp: sdp) { result in
-                                if case .failure(let error) = result {
-                                    Task { @MainActor in self.failCall(error) }
+                        connection.createOffer { [weak self] offerResult in
+                            guard let self else { return }
+                            switch offerResult {
+                            case .failure(let error):
+                                Task { @MainActor in self.failCall(error) }
+                            case .success(let sdp):
+                                self.signaling.setDescription(callId: callId, type: "offer", sdp: sdp) { result in
+                                    if case .failure(let error) = result {
+                                        Task { @MainActor in self.failCall(error) }
+                                    }
                                 }
                             }
                         }
@@ -179,64 +181,79 @@ final class InternetCallManager: ObservableObject {
         errorMessage = nil
     }
 
-    private func prepareAudioAndSignaling(callId: String) {
+    private func prepareAudioAndSignaling(
+        callId: String,
+        completion: ((WebRTCAudioService) -> Void)? = nil
+    ) {
         guard let uid = localUID else { return }
-        do {
-            let connection = try WebRTCAudioService()
-            audio = connection
-            remoteDescriptionApplied = false
-            answerSubmitted = false
-
-            connection.onLocalCandidate = { [weak self] candidate in
+        statusText = "Loading secure call connection…"
+        signaling.fetchTurnIceServers { [weak self] result in
+            Task { @MainActor in
                 guard let self else { return }
-                self.signaling.addCandidate(
-                    callId: callId,
-                    sdp: candidate.sdp,
-                    sdpMid: candidate.sdpMid,
-                    sdpMLineIndex: candidate.sdpMLineIndex
-                ) { result in
-                    if case .failure(let error) = result {
-                        Task { @MainActor in self.errorMessage = error.localizedDescription }
-                    }
-                }
-            }
-            connection.onConnectionStateChanged = { [weak self] state in
-                Task { @MainActor in
-                    switch state {
-                    case .connected, .completed:
-                        self?.statusText = "Connected"
-                    case .failed:
-                        self?.statusText = "Connection failed — check TURN configuration"
-                    case .disconnected:
-                        self?.statusText = "Connection interrupted"
-                    case .closed:
-                        self?.statusText = "Call closed"
-                    default:
-                        self?.statusText = "Connecting…"
-                    }
-                }
-            }
+                switch result {
+                case .failure(let error):
+                    self.failCall(error)
+                case .success(let iceServers):
+                    do {
+                        let connection = try WebRTCAudioService(iceServers: iceServers)
+                        self.audio = connection
+                        self.remoteDescriptionApplied = false
+                        self.answerSubmitted = false
 
-            callListener = signaling.observeCall(callId: callId) { [weak self] data in
-                Task { @MainActor in self?.handleCallUpdate(data, callId: callId) }
-            }
-            candidatesListener = signaling.observeRemoteCandidates(
-                callId: callId,
-                localUID: uid
-            ) { [weak self] candidate in
-                guard let sdp = candidate["sdp"] as? String,
-                      let line = candidate["sdpMLineIndex"] as? Int else { return }
-                let mid = candidate["sdpMid"] as? String
-                Task { @MainActor in
-                    self?.audio?.addRemoteCandidate(
-                        sdp: sdp,
-                        sdpMid: mid,
-                        sdpMLineIndex: Int32(line)
-                    )
+                        connection.onLocalCandidate = { [weak self] candidate in
+                            guard let self else { return }
+                            self.signaling.addCandidate(
+                                callId: callId,
+                                sdp: candidate.sdp,
+                                sdpMid: candidate.sdpMid,
+                                sdpMLineIndex: candidate.sdpMLineIndex
+                            ) { result in
+                                if case .failure(let error) = result {
+                                    Task { @MainActor in self.errorMessage = error.localizedDescription }
+                                }
+                            }
+                        }
+                        connection.onConnectionStateChanged = { [weak self] state in
+                            Task { @MainActor in
+                                switch state {
+                                case .connected, .completed:
+                                    self?.statusText = "Connected"
+                                case .failed:
+                                    self?.statusText = "Connection failed — check TURN configuration"
+                                case .disconnected:
+                                    self?.statusText = "Connection interrupted"
+                                case .closed:
+                                    self?.statusText = "Call closed"
+                                default:
+                                    self?.statusText = "Connecting…"
+                                }
+                            }
+                        }
+
+                        self.callListener = self.signaling.observeCall(callId: callId) { [weak self] data in
+                            Task { @MainActor in self?.handleCallUpdate(data, callId: callId) }
+                        }
+                        self.candidatesListener = self.signaling.observeRemoteCandidates(
+                            callId: callId,
+                            localUID: uid
+                        ) { [weak self] candidate in
+                            guard let sdp = candidate["sdp"] as? String,
+                                  let line = candidate["sdpMLineIndex"] as? Int else { return }
+                            let mid = candidate["sdpMid"] as? String
+                            Task { @MainActor in
+                                self?.audio?.addRemoteCandidate(
+                                    sdp: sdp,
+                                    sdpMid: mid,
+                                    sdpMLineIndex: Int32(line)
+                                )
+                            }
+                        }
+                        completion?(connection)
+                    } catch {
+                        self.failCall(error)
+                    }
                 }
             }
-        } catch {
-            failCall(error)
         }
     }
 
