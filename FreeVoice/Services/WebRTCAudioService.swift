@@ -38,11 +38,12 @@ final class WebRTCAudioService: NSObject {
     private var hasRemoteDescription = false
     private var pendingRemoteCandidates: [RTCIceCandidate] = []
 
-    init(iceServers: [String] = ["stun:stun.l.google.com:19302"]) throws {
+    init(iceServers: [RTCIceServer] = [
+        RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"])
+    ]) throws {
         let configuration = RTCConfiguration()
-        // STUN helps discover public network paths. Production deployment must
-        // also configure authenticated TURN credentials for reliable NAT traversal.
-        configuration.iceServers = [RTCIceServer(urlStrings: iceServers)]
+        // TURN credentials are supplied at runtime by the Metered configuration.
+        configuration.iceServers = iceServers
         configuration.sdpSemantics = .unifiedPlan
         configuration.continualGatheringPolicy = .gatherContinually
 
