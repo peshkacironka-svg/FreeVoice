@@ -1,14 +1,7 @@
 name: FreeVoice iOS Build
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
-
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - fix/firebasecore-ci-build
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -22,14 +15,14 @@ jobs:
 
       - name: Build FreeVoice for iOS Simulator
         run: |
-          xcodebuild \\
-            -project FreeVoice.xcodeproj \\
-            -scheme FreeVoice \\
-            -sdk iphonesimulator \\
-            -configuration Debug \\
-            -destination 'generic/platform=iOS Simulator' \\
-            -derivedDataPath build/DerivedData \\
-            CODE_SIGNING_ALLOWED=NO \\
+          xcodebuild \
+            -project FreeVoice.xcodeproj \
+            -scheme FreeVoice \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: Upload FreeVoice Artifact
