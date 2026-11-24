@@ -1,12 +1,81 @@
 import FirebaseFirestore
 import FirebaseFunctions
 import Foundation
+import WebRTC
 
 /// Authenticated Firebase call signaling. Audio packets never pass through
 /// Firestore; this service only exchanges call state, SDP, and ICE candidates.
 final class CallSignalingService {
     private let database = Firestore.firestore()
     private let functions = Functions.functions(region: "europe-west3")
+
+    func fetchTurnIceServers(
+        completion: @escaping (Result<[RTCIceServer], Error>) -> Void
+    ) {
+        database.collection("appConfig").document("meteredTurn").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let apiKey = snapshot?.data()?["apiKey"] as? String,
+                  !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                completion(.failure(SignalingError.missingTurnConfiguration))
+                return
+            }
+
+            var components = URLComponents(
+                string: "https://freevoice-app.metered.live/api/v1/turn/credentials"
+            )
+            components?.queryItems = [URLQueryItem(name: "apiKey", value: apiKey)]
+
+            guard let url = components?.url else {
+                completion(.failure(SignalingError.invalidServerResponse))
+                return
+            }
+
+            URLSession.shared.dataTask(with: url) { data, response, requestError in
+                if let requestError {
+                    completion(.failure(requestError))
+                    return
+                }
+
+                guard let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode),
+                      let data,
+                      let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                    completion(.failure(SignalingError.invalidServerResponse))
+                    return
+                }
+
+                let servers: [RTCIceServer] = entries.compactMap { entry in
+                    let urls: [String]
+                    if let values = entry["urls"] as? [String] {
+                        urls = values
+                    } else if let value = entry["urls"] as? String {
+                        urls = [value]
+                    } else {
+                        return nil
+                    }
+
+                    guard !urls.isEmpty else { return nil }
+                    let username = entry["username"] as? String ?? ""
+                    let credential = entry["credential"] as? String ?? ""
+                    return RTCIceServer(
+                        urlStrings: urls,
+                        username: username,
+                        credential: credential
+                    )
+                }
+
+                guard !servers.isEmpty else {
+                    completion(.failure(SignalingError.invalidServerResponse))
+                    return
+                }
+                completion(.success(servers))
+            }.resume()
+        }
+    }
 
     func createCall(
         calleeUID: String,
@@ -142,8 +211,14 @@ final class CallSignalingService {
 
 private enum SignalingError: LocalizedError {
     case invalidServerResponse
+    case missingTurnConfiguration
 
     var errorDescription: String? {
-        "The call server returned an invalid response."
+        switch self {
+        case .invalidServerResponse:
+            return "The call server returned an invalid response."
+        case .missingTurnConfiguration:
+            return "Metered TURN is not configured in Firestore yet."
+        }
     }
 }
