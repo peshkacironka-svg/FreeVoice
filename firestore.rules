@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isCallParticipant() {
+      return request.auth != null
+        && request.auth.uid in resource.data.participants;
+    }
+
+    function isCallParticipantForCall(callId) {
+      return request.auth != null
+        && request.auth.uid in get(
+          /databases/$(database)/documents/calls/$(callId)
+        ).data.participants;
+    }
+
+    match /users/{userId} {
+      allow get: if signedInAs(userId);
+      allow list: if false;
+      allow create: if signedInAs(userId)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if signedInAs(userId)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    // Metered's credential-scoped client API key is read-only app configuration.
+    // It is intentionally readable only by authenticated FreeVoice users.
+    match /appConfig/meteredTurn {
+      allow get: if request.auth != null;
+      allow list, create, update, delete: if false;
+    }
+
+    match /calls/{callId} {
+      allow get, list: if isCallParticipant();
+      // All call state changes must pass through authenticated Cloud Functions.
+      allow create, update, delete: if false;
+
+      match /iceCandidates/{candidateId} {
+        allow get, list: if isCallParticipantForCall(callId);
+        // Candidate creation is validated and rate-limited by Cloud Functions.
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,31 @@
+name: FreeVoice Cloud Functions
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - fix/firebasecore-ci-build
+    paths:
+      - "functions/**"
+      - ".github/workflows/functions.yml"
+  workflow_dispatch:
+
+jobs:
+  build-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: functions
+        run: npm install
+      - name: Compile Cloud Functions
+        working-directory: functions
+        run: npm run build
