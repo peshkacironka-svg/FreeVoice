@@ -1,17 +1,27 @@
 name: FreeVoice iOS Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
   pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-      - name: Download repository
+      - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -n 1)
+          if [ -n "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          fi
+          xcodebuild -version
 
       - name: Build FreeVoice for iOS Simulator
         run: |
