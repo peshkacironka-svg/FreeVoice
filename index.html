@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10251f"><link rel="manifest" href="manifest.webmanifest">
+<title>FreeVoice Web</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0c1714;color:#f3f7f4}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;max-width:620px;margin-inline:auto}
+header{text-align:center;padding:18px 0 22px}h1{font-size:34px;margin:4px 0;color:#8ee0b2}p{line-height:1.5;color:#c5d3cb}
+.panel{background:#172822;border:1px solid #294237;border-radius:18px;padding:18px;margin:14px 0}
+h2{font-size:19px;margin:0 0 10px}.muted{font-size:14px;color:#b1c2b8}
+button{width:100%;border:0;border-radius:13px;padding:15px 12px;margin:7px 0;background:#8ee0b2;color:#10251b;font-size:16px;font-weight:700}
+button.secondary{background:#29483b;color:#f3f7f4}button.danger{background:#a94444;color:white}
+textarea{width:100%;min-height:120px;border-radius:12px;border:1px solid #496456;background:#0d1a15;color:white;padding:12px;font-size:13px;resize:vertical}
+#status{padding:12px;border-radius:12px;background:#20372d;color:#bdf2ce;text-align:center;margin:10px 0}
+small{color:#a9bbb0}.step{font-weight:700;color:#8ee0b2}
+</style></head>
+<body>
+<header><div style="font-size:44px">🎙️</div><h1>FreeVoice</h1><p>Δωρεάν δοκιμαστική έκδοση φωνητικής κλήσης από Safari.</p></header>
+<div id="status">Έτοιμο. Συνδέσου με δεύτερο iPhone μέσω internet.</div>
+<section class="panel">
+<h2>1. Άνοιξε το μικρόφωνο</h2><p class="muted">Και τα δύο iPhone πρέπει να ανοίξουν αυτή τη σελίδα και να επιτρέψουν τη χρήση μικροφώνου.</p>
+<button id="mic">Ενεργοποίηση μικροφώνου</button>
+</section>
+<section class="panel">
+<h2>2. Δημιουργία σύνδεσης</h2>
+<p class="muted"><span class="step">iPhone A:</span> Πάτησε «Δημιουργία πρόσκλησης» και στείλε τον κωδικό στο iPhone B με μήνυμα.</p>
+<button id="offer">Δημιουργία πρόσκλησης (iPhone A)</button>
+<textarea id="local" placeholder="Ο κωδικός σου θα εμφανιστεί εδώ…" readonly></textarea>
+<button class="secondary" id="copy">Αντιγραφή κωδικού</button>
+<hr style="border:0;border-top:1px solid #385347;margin:18px 0">
+<p class="muted"><span class="step">iPhone B:</span> Βάλε εδώ την πρόσκληση που έλαβες και πάτησε «Απάντηση». Έπειτα στείλε τον κωδικό απάντησης πίσω στο iPhone A.</p>
+<textarea id="incoming" placeholder="Επικόλλησε εδώ τον κωδικό που έλαβες…"></textarea>
+<button id="answer">Απάντηση (iPhone B)</button>
+<textarea id="reply" placeholder="Ο κωδικός απάντησης θα εμφανιστεί εδώ…" readonly></textarea>
+<button class="secondary" id="copyReply">Αντιγραφή απάντησης</button>
+<hr style="border:0;border-top:1px solid #385347;margin:18px 0">
+<p class="muted"><span class="step">iPhone A:</span> Επικόλλησε εδώ την απάντηση που έλαβες από το iPhone B.</p>
+<textarea id="answerIn" placeholder="Επικόλλησε εδώ την απάντηση…"></textarea>
+<button id="connect">Ολοκλήρωση σύνδεσης (iPhone A)</button>
+</section>
+<section class="panel">
+<h2>3. Κλήση</h2>
+<audio id="remoteAudio" autoplay playsinline></audio>
+<button class="danger" id="hangup">Τερματισμός / Κλείσιμο μικροφώνου</button>
+<p class="muted">Η έκδοση αυτή χρησιμοποιεί σύνδεση internet (WebRTC). Δεν είναι ακόμη η αρχική λειτουργία κοντινών συσκευών χωρίς internet.</p>
+</section>
+<script>
+let pc=null,stream=null;
+const $=id=>document.getElementById(id);
+function status(t){$('status').textContent=t}
+function makePC(){
+ if(pc)pc.close();
+ pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ pc.ontrack=e=>{$('remoteAudio').srcObject=e.streams[0];$('remoteAudio').play().catch(()=>status('Πάτησε στην οθόνη για να ακουστεί ο συνομιλητής.'))};
+ pc.onconnectionstatechange=()=>status('Κατάσταση σύνδεσης: '+pc.connectionState);
+ if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+ return pc;
+}
+async function microphone(){
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});status('Το μικρόφωνο ενεργοποιήθηκε.');return true}
+ catch(e){status('Δεν δόθηκε πρόσβαση στο μικρόφωνο: '+e.message);return false}
+}
+async function gather(){
+ if(pc.iceGatheringState==='complete')return;
+ await new Promise(resolve=>{
+  const timer=setTimeout(done,12000);
+  function done(){clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',check);resolve()}
+  function check(){if(pc.iceGatheringState==='complete')done()}
+  pc.addEventListener('icegatheringstatechange',check);
+ });
+}
+$('mic').onclick=microphone;
+$('offer').onclick=async()=>{
+ if(!stream&&!await microphone())return;
+ try{makePC();const d=await pc.createOffer();await pc.setLocalDescription(d);status('Ετοιμάζεται η πρόσκληση…');await gather();$('local').value=JSON.stringify(pc.localDescription);status('Η πρόσκληση είναι έτοιμη. Στείλε την στο δεύτερο iPhone.')}
+ catch(e){status('Σφάλμα δημιουργίας πρόσκλησης: '+e.message)}
+};
+$('answer').onclick=async()=>{
+ if(!stream&&!await microphone())return;
+ try{const d=JSON.parse($('incoming').value);makePC();await pc.setRemoteDescription(d);const a=await pc.createAnswer();await pc.setLocalDescription(a);status('Ετοιμάζεται η απάντηση…');await gather();$('reply').value=JSON.stringify(pc.localDescription);status('Στείλε την απάντηση πίσω στο iPhone A.')}
+ catch(e){status('Δεν ήταν έγκυρη η πρόσκληση: '+e.message)}
+};
+$('connect').onclick=async()=>{
+ try{await pc.setRemoteDescription(JSON.parse($('answerIn').value));status('Η απάντηση καταχωρίστηκε. Γίνεται σύνδεση…')}
+ catch(e){status('Δεν ήταν έγκυρη η απάντηση: '+e.message)}
+};
+$('copy').onclick=()=>navigator.clipboard.writeText($('local').value).then(()=>status('Η πρόσκληση αντιγράφηκε.'));
+$('copyReply').onclick=()=>navigator.clipboard.writeText($('reply').value).then(()=>status('Η απάντηση αντιγράφηκε.'));
+$('hangup').onclick=()=>{if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('remoteAudio').srcObject=null;status('Η κλήση έκλεισε και το μικρόφωνο απενεργοποιήθηκε.')};
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script></body></html>
