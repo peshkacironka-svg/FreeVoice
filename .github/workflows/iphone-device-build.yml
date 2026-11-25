@@ -1,0 +1,43 @@
+name: FreeVoice iPhone Device Build
+
+on:
+  push:
+    branches:
+      - test/iphone-device-build
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -n 1)
+          if [ -n "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          fi
+          xcodebuild -version
+
+      - name: Build FreeVoice for physical iPhone (unsigned)
+        run: |
+          xcodebuild \
+            -project FreeVoice.xcodeproj \
+            -scheme FreeVoice \
+            -sdk iphoneos \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload unsigned iPhone app build
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeVoice-iPhone-Unsigned
+          path: build/DerivedData/Build/Products/Debug-iphoneos/FreeVoice.app
+          if-no-files-found: error
+          retention-days: 7
