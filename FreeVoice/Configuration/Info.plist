@@ -2,6 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.peshkacironka.freevoice</string>
+    <key>CFBundleName</key>
+    <string>FreeVoice</string>
+    <key>CFBundleDisplayName</key>
+    <string>FreeVoice</string>
+    <key>CFBundleExecutable</key>
+    <string>FreeVoice</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>FreeVoice uses the microphone to send your voice during nearby calls.</string>
     <key>NSLocalNetworkUsageDescription</key>
