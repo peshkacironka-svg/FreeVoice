@@ -1,4 +1,4 @@
-name: FreeVoice iOS Build
+name: FreeVoice iPhone Build
 
 on:
   push:
@@ -23,22 +23,29 @@ jobs:
           fi
           xcodebuild -version
 
-      - name: Build FreeVoice for iOS Simulator
+      - name: Build FreeVoice for physical iPhone
         run: |
           xcodebuild \
             -project FreeVoice.xcodeproj \
             -scheme FreeVoice \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Upload FreeVoice Artifact
+      - name: Package unsigned IPA for Sideloadly
+        run: |
+          mkdir -p build/IPA/Payload
+          cp -R build/DerivedData/Build/Products/Release-iphoneos/FreeVoice.app build/IPA/Payload/
+          cd build/IPA
+          /usr/bin/zip -r ../FreeVoice-unsigned.ipa Payload
+
+      - name: Upload FreeVoice iPhone IPA
         uses: actions/upload-artifact@v4
         with:
-          name: FreeVoice-iOS-Simulator
-          path: build/DerivedData/Build/Products/Debug-iphonesimulator/FreeVoice.app
+          name: FreeVoice-iPhone-unsigned-IPA
+          path: build/FreeVoice-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
