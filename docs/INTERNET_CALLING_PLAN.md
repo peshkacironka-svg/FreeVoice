@@ -50,3 +50,12 @@ Allow two FreeVoice users to place voice calls over Wi-Fi or mobile data, includ
 ## Next engineering task
 
 Implement the WebRTC peer-connection layer: local audio track, offer/answer exchange, ICE candidate handling, connection-state reporting, and explicit cleanup. Keep signaling behind a separate interface so the backend can be selected without rewriting the media layer. Do not enable Internet calls in the UI until signaling and TURN configuration are available and real-device tests pass.
+
+
+## WebRTC audio peer-connection layer
+
+- Added `WebRTCPeerConnection`, a signaling-independent owner for one audio peer connection.
+- It creates a local microphone audio track, supports offer and answer creation, applies remote session descriptions, accepts remote ICE candidates, emits local ICE candidates, reports ICE connection state, and closes the connection.
+- ICE servers are injected by the caller. No public STUN/TURN credentials or production relay configuration are hard-coded.
+- The class is not yet wired into `CallManager` or the user interface. The app still uses the nearby transport until signaling, permissions, ICE configuration, and device testing are complete.
+- The next gate is a clean Xcode build and API compatibility check against the pinned WebRTC package. After that, implement authenticated signaling and connect the signaling events to this peer-connection layer.
