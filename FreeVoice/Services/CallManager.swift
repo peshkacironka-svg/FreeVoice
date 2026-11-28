@@ -9,7 +9,7 @@ final class CallManager: ObservableObject {
     @Published private(set) var nearbyPeers: [MCPeerID] = []
     @Published var errorMessage: String?
 
-    private let nearbyAudio = NearbyAudioService()
+    private let nearbyAudio: CallTransport = NearbyAudioService()
     private var activePeer: MCPeerID?
     private var outgoingTimeoutTask: Task<Void, Never>?
 
@@ -144,7 +144,7 @@ final class CallManager: ObservableObject {
         if let peer = activePeer {
             nearbyAudio.endCall(with: peer)
         } else {
-            nearbyAudio.endCall()
+            nearbyAudio.endCall(with: nil)
         }
         activeCall = nil
         activePeer = nil
