@@ -15,7 +15,8 @@
 		A10000000000000000000005 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* ContentView.swift */; };
 		A10000000000000000000006 /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* ActiveCallView.swift */; };
 		A10000000000000000000008 /* WebRTCModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* WebRTCModule.swift */; };
-		A10000000000000000000009 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000001 /* WebRTC */; };\n\t\tA10000000000000000000010 /* WebRTCPeerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* WebRTCPeerConnection.swift */; };
+		A10000000000000000000009 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000001 /* WebRTC */; };
+	\tA10000000000000000000010 /* WebRTCPeerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* WebRTCPeerConnection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +28,8 @@
 		A20000000000000000000006 /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000009 /* CallTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTransport.swift; sourceTree = "<group>"; };
-		A20000000000000000000010 /* WebRTCModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCModule.swift; sourceTree = "<group>"; };\n\t\tA20000000000000000000011 /* WebRTCPeerConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCPeerConnection.swift; sourceTree = "<group>"; };
+		A20000000000000000000010 /* WebRTCModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCModule.swift; sourceTree = "<group>"; };
+	\tA20000000000000000000011 /* WebRTCPeerConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCPeerConnection.swift; sourceTree = "<group>"; };
 		A20000000000000000000008 /* FreeVoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreeVoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
