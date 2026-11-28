@@ -223,14 +223,13 @@ final class WebRTCCallCoordinator {
 
     private func receiveICECandidate(_ message: CallSignalMessage) async throws {
         guard let candidateText = message.candidate,
-              let mid = message.sdpMid,
               let lineIndex = message.sdpMLineIndex else {
             throw WebRTCCallCoordinatorError.invalidICECandidate
         }
         let candidate = RTCIceCandidate(
             sdp: candidateText,
             sdpMLineIndex: lineIndex,
-            sdpMid: mid
+            sdpMid: message.sdpMid
         )
         guard hasRemoteDescription else {
             pendingRemoteCandidates.append(candidate)
