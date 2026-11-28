@@ -68,3 +68,14 @@ Implement the WebRTC peer-connection layer: local audio track, offer/answer exch
 - No signaling provider or backend SDK is included. In particular, Supabase has not been started or configured.
 - A future provider implementation must authenticate each user and enforce sender, recipient, and call ownership on the server. Client-provided IDs alone are not authentication.
 - The next step is to validate this contract with the WebRTC negotiation flow and then add a provider implementation only when the backend choice is approved.
+
+
+## Backend-neutral WebRTC signaling coordinator
+
+- Added `WebRTCCallCoordinator`, which connects the signaling contract to the WebRTC peer-connection layer without selecting or importing a backend SDK.
+- The initiating caller sends an invitation; after acceptance, that caller creates and sends the SDP offer. The callee applies the offer and returns an SDP answer.
+- Local ICE candidates are sent through the injected signaling client. Remote candidates that arrive before the remote SDP is applied are buffered and flushed afterward.
+- Incoming messages are checked against the local participant ID, active call ID, and expected remote participant ID before they can affect the call.
+- Call termination and negotiation failures close the peer connection and clear per-call ICE state.
+- This coordinator is an integration layer, not a complete Internet calling feature: it is not connected to the current call UI or `CallManager`, and no concrete signaling provider exists yet. The signaling implementation must authenticate users and enforce authorization server-side; client-side ID checks are only defensive validation.
+- No Supabase code, project, credentials, or configuration has been added. Real two-device Internet calling still requires an authenticated signaling provider, STUN/TURN configuration, UI integration, and cross-network device tests.
