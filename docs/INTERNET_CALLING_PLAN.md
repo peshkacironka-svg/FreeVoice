@@ -39,6 +39,14 @@ Allow two FreeVoice users to place voice calls over Wi-Fi or mobile data, includ
 - GitHub Actions builds the iOS app on `macos-latest` with `xcodebuild` and packages an unsigned IPA. Pull requests also trigger this build.
 - The current CI workflow is a useful compile gate, but it does not run device-to-device call tests.
 
+## WebRTC dependency foundation
+
+- Added the WebRTC binary framework through Swift Package Manager, pinned to the exact `158.0.0` release from `stasel/WebRTC`.
+- The package distributes an XCFramework and supports iOS 15+, which is compatible with this app's iOS 17 deployment target.
+- Added `WebRTCModule` as a small initialization point that creates an `RTCPeerConnectionFactory`.
+- The new module is not yet connected to the call UI and does not place calls. This is intentional: a working Internet call also needs authenticated signaling, remote user identity, and STUN/TURN configuration.
+- The existing MultipeerConnectivity implementation remains unchanged.
+
 ## Next engineering task
 
-Design and add a transport-neutral call interface while preserving the existing nearby implementation. Before choosing a WebRTC package integration, verify its current iOS support and the cleanest way to add it to this Xcode project. Then add the Internet transport behind the interface and keep it disabled until signaling and TURN configuration are available.
+Implement the WebRTC peer-connection layer: local audio track, offer/answer exchange, ICE candidate handling, connection-state reporting, and explicit cleanup. Keep signaling behind a separate interface so the backend can be selected without rewriting the media layer. Do not enable Internet calls in the UI until signaling and TURN configuration are available and real-device tests pass.
