@@ -32,6 +32,13 @@ Allow two FreeVoice users to place voice calls over Wi-Fi or mobile data, includ
 - Do not claim Internet calling works until two real devices have completed calls across different networks.
 - The backend provider, hosting cost, authentication method, and TURN provider must be selected before production service implementation.
 
-## First engineering task
+## Repository inspection findings
 
-Inspect the Xcode project and CI workflow to establish the deployment target and whether Swift Package Manager dependencies can be added cleanly. Then design the transport interface before implementing network calling.
+- The Xcode project currently targets iOS 17.0 and uses Swift 5 language mode.
+- The project is a small hand-maintained `.pbxproj` with six Swift source files and no existing third-party framework entries.
+- GitHub Actions builds the iOS app on `macos-latest` with `xcodebuild` and packages an unsigned IPA. Pull requests also trigger this build.
+- The current CI workflow is a useful compile gate, but it does not run device-to-device call tests.
+
+## Next engineering task
+
+Design and add a transport-neutral call interface while preserving the existing nearby implementation. Before choosing a WebRTC package integration, verify its current iOS support and the cleanest way to add it to this Xcode project. Then add the Internet transport behind the interface and keep it disabled until signaling and TURN configuration are available.
