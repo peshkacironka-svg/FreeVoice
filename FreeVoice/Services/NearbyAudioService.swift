@@ -6,7 +6,7 @@ import UIKit
 
 /// Nearby-only audio transport. PCM packets use mono Float32 at 16 kHz and are
 /// sent unreliably to favor low latency. MultipeerConnectivity encrypts its session.
-final class NearbyAudioService: NSObject {
+final class NearbyAudioService: NSObject, CallTransport {
     private static let serviceType = "freevoice"
     private static let sampleRate = 16_000.0
     private static let maximumPacketBytes = 8_192
