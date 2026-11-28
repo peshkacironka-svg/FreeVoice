@@ -82,7 +82,6 @@ final class WebRTCCallCoordinator {
 
         do {
             try await send(type: .accepted)
-            try await createAndSendOffer()
         } catch {
             await endCall()
             throw error
