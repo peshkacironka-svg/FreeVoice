@@ -50,3 +50,40 @@ Allow two FreeVoice users to place voice calls over Wi-Fi or mobile data, includ
 ## Next engineering task
 
 Implement the WebRTC peer-connection layer: local audio track, offer/answer exchange, ICE candidate handling, connection-state reporting, and explicit cleanup. Keep signaling behind a separate interface so the backend can be selected without rewriting the media layer. Do not enable Internet calls in the UI until signaling and TURN configuration are available and real-device tests pass.
+
+
+## WebRTC audio peer-connection layer
+
+- Added `WebRTCPeerConnection`, a signaling-independent owner for one audio peer connection.
+- It creates a local microphone audio track, supports offer and answer creation, applies remote session descriptions, accepts remote ICE candidates, emits local ICE candidates, reports ICE connection state, and closes the connection.
+- ICE servers are injected by the caller. No public STUN/TURN credentials or production relay configuration are hard-coded.
+- The class is not yet wired into `CallManager` or the user interface. The app still uses the nearby transport until signaling, permissions, ICE configuration, and device testing are complete.
+- The next gate is a clean Xcode build and API compatibility check against the pinned WebRTC package. After that, implement authenticated signaling and connect the signaling events to this peer-connection layer.
+
+
+## Backend-neutral signaling contract
+
+- Added `CallSignalingClient` and Codable call-signal message types for invitations, accept/reject, SDP offer/answer, ICE candidates, and call termination.
+- The contract uses stable app-level participant IDs and does not depend on MultipeerConnectivity identities.
+- No signaling provider or backend SDK is included. In particular, Supabase has not been started or configured.
+- A future provider implementation must authenticate each user and enforce sender, recipient, and call ownership on the server. Client-provided IDs alone are not authentication.
+- The next step is to validate this contract with the WebRTC negotiation flow and then add a provider implementation only when the backend choice is approved.
+
+
+## Backend-neutral WebRTC signaling coordinator
+
+- Added `WebRTCCallCoordinator`, which connects the signaling contract to the WebRTC peer-connection layer without selecting or importing a backend SDK.
+- The initiating caller sends an invitation; after acceptance, that caller creates and sends the SDP offer. The callee applies the offer and returns an SDP answer.
+- Local ICE candidates are sent through the injected signaling client. Remote candidates that arrive before the remote SDP is applied are buffered and flushed afterward.
+- Incoming messages are checked against the local participant ID, active call ID, and expected remote participant ID before they can affect the call.
+- Call termination and negotiation failures close the peer connection and clear per-call ICE state.
+- This coordinator is an integration layer, not a complete Internet calling feature: it is not connected to the current call UI or `CallManager`, and no concrete signaling provider exists yet. The signaling implementation must authenticate users and enforce authorization server-side; client-side ID checks are only defensive validation.
+- No Supabase code, project, credentials, or configuration has been added. Real two-device Internet calling still requires an authenticated signaling provider, STUN/TURN configuration, UI integration, and cross-network device tests.
+
+
+## CallManager integration gate
+
+- The backend-neutral coordinator is intentionally kept separate from `CallManager` for now. The app currently has no authenticated Internet user identity and no concrete `CallSignalingClient` implementation to inject.
+- Connecting it to the live call manager before those dependencies exist would create an unusable Internet-call path and risk confusing it with the working nearby flow.
+- Once the signaling provider and stable signed-in user identity are available, inject the coordinator into `CallManager`, add microphone/AVAudioSession lifecycle handling, then expose Internet call controls. Keep the nearby transport as a separate supported path until cross-network device tests pass.
+- The current coordinator build validates compilation only; it does not validate network signaling, media routing, microphone behavior, or real calls.
