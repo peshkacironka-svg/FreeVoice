@@ -95,8 +95,13 @@ final class WebRTCCallCoordinator {
         activeCallID = invitation.callID
         remoteUserID = invitation.callerID
         incomingInvitation = nil
-        try await send(type: .rejected)
-        resetCall()
+        do {
+            try await send(type: .rejected)
+            resetCall()
+        } catch {
+            resetCall()
+            throw error
+        }
     }
 
     func endCall() async {
