@@ -59,3 +59,12 @@ Implement the WebRTC peer-connection layer: local audio track, offer/answer exch
 - ICE servers are injected by the caller. No public STUN/TURN credentials or production relay configuration are hard-coded.
 - The class is not yet wired into `CallManager` or the user interface. The app still uses the nearby transport until signaling, permissions, ICE configuration, and device testing are complete.
 - The next gate is a clean Xcode build and API compatibility check against the pinned WebRTC package. After that, implement authenticated signaling and connect the signaling events to this peer-connection layer.
+
+
+## Backend-neutral signaling contract
+
+- Added `CallSignalingClient` and Codable call-signal message types for invitations, accept/reject, SDP offer/answer, ICE candidates, and call termination.
+- The contract uses stable app-level participant IDs and does not depend on MultipeerConnectivity identities.
+- No signaling provider or backend SDK is included. In particular, Supabase has not been started or configured.
+- A future provider implementation must authenticate each user and enforce sender, recipient, and call ownership on the server. Client-provided IDs alone are not authentication.
+- The next step is to validate this contract with the WebRTC negotiation flow and then add a provider implementation only when the backend choice is approved.
