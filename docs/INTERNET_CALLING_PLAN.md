@@ -79,3 +79,11 @@ Implement the WebRTC peer-connection layer: local audio track, offer/answer exch
 - Call termination and negotiation failures close the peer connection and clear per-call ICE state.
 - This coordinator is an integration layer, not a complete Internet calling feature: it is not connected to the current call UI or `CallManager`, and no concrete signaling provider exists yet. The signaling implementation must authenticate users and enforce authorization server-side; client-side ID checks are only defensive validation.
 - No Supabase code, project, credentials, or configuration has been added. Real two-device Internet calling still requires an authenticated signaling provider, STUN/TURN configuration, UI integration, and cross-network device tests.
+
+
+## CallManager integration gate
+
+- The backend-neutral coordinator is intentionally kept separate from `CallManager` for now. The app currently has no authenticated Internet user identity and no concrete `CallSignalingClient` implementation to inject.
+- Connecting it to the live call manager before those dependencies exist would create an unusable Internet-call path and risk confusing it with the working nearby flow.
+- Once the signaling provider and stable signed-in user identity are available, inject the coordinator into `CallManager`, add microphone/AVAudioSession lifecycle handling, then expose Internet call controls. Keep the nearby transport as a separate supported path until cross-network device tests pass.
+- The current coordinator build validates compilation only; it does not validate network signaling, media routing, microphone behavior, or real calls.
